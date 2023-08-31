@@ -1,0 +1,32 @@
+{
+  "name": "crypto_aggregator",
+  "private": "true",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "repository": "https://github.com/timolegros/CryptoAggregator.git",
+  "author": "Timothee Legros <timothee@ualberta.ca>",
+  "scripts": {
+    "start-dev": "ts-node-dev --max-old-space-size=4096 --respawn --transpileOnly -P tsconfig.json ./src/server.ts",
+    "build": "tsc -P tsconfig.json",
+    "check-types": "tsc --noEmit -P tsconfig.json",
+    "lint-new": "./scripts/lint-new-work.sh",
+    "lint-branch": "./scripts/lint-branch.sh",
+    "lint-all": "NODE_OPTIONS=\"--max-old-space-size=4096\" eslint './src/**/*.ts'",
+    "format": "prettier --write .",
+    "add-prettier-precommit": "grep -q -s 'prettier --write' ./.git/hooks/pre-commit || cat ./scripts/prettier-new-work.sh >> ./.git/hooks/pre-commit"
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/node": "^14.11.2",
+    "@typescript-eslint/eslint-plugin": "^5.60.1",
+    "@typescript-eslint/parser": "^5.60.1",
+    "eslint": "^8.44.0",
+    "eslint-config-prettier": "^8.8.0",
+    "prettier": "^2.8.8",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "5.0.4"
+  },
+  "dependencies": {
+
+  }
+}
