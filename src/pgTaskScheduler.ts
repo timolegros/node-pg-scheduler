@@ -1,19 +1,43 @@
-import {Client, ClientConfig} from 'pg';
-import {createTasksTable} from "./queries";
-import {CheckInitialized} from "./util";
-import {TaskHandlerManager} from "./taskHandlerManager";
-import {TaskManager} from "./taskManager";
+import { Client, ClientConfig } from "pg";
+import { createTasksTable } from "./pg/queries";
+import { CheckInitialized } from "./util";
+import { TaskManager } from "./pg/taskManager";
+import { TaskSchedulerOptions } from "./pg/types";
+import {AbstractHandlerManager} from "./pg/handler/types";
+import { CentralizedHandlerManager } from "./pg/handler/centralizedManager";
+import { DistributedHandlerManager } from "./pg/handler/distributedManager";
 
-export class PgTaskScheduler extends TaskManager, TaskHandlerManager {
+export class PgTaskScheduler {
   private autoClearOldTasks: boolean = true;
 
   private client: Client;
   protected initialized: boolean = false;
   private concurrentlyExecutingTasks: number = 0;
+  private timeoutExecution: boolean;
+  private distributed: boolean;
 
-  constructor() {
-    super();
-    console.log('PgScheduler constructor');
+  private taskManager: TaskManager;
+  private handlerManager: AbstractHandlerManager;
+
+  private backend: string;
+
+  constructor({
+    concurrentlyExecutingTasks,
+    timeoutExecution,
+    distributed,
+    backend,
+  }: TaskSchedulerOptions) {
+    this.timeoutExecution = timeoutExecution || true;
+    this.concurrentlyExecutingTasks = concurrentlyExecutingTasks || 25;
+    this.distributed = distributed || false;
+    this.backend = backend;
+    this.taskManager = new TaskManager();
+
+    if (distributed) {
+      this.handlerManager = new DistributedHandlerManager();
+    } else {
+      this.handlerManager = new CentralizedHandlerManager();
+    }
   }
 
   public async init(pgClientConfig: ClientConfig) {
@@ -27,13 +51,13 @@ export class PgTaskScheduler extends TaskManager, TaskHandlerManager {
     try {
       await this.client.query(createTasksTable);
     } catch (e) {
-      console.error('Error creating tasks table', e);
+      console.error("Error creating tasks table", e);
       return;
     }
 
     // clear old tasks if autoClearOldTasks is true
     if (this.autoClearOldTasks) {
-      await this.clearOldTasks();
+      // await this.clearOldTasks();
     }
 
     this.initialized = true;
@@ -41,10 +65,12 @@ export class PgTaskScheduler extends TaskManager, TaskHandlerManager {
 
   // TODO: In order to avoid the polling interval delay in task execution, query tasks that will be executing in the
   //  near future and queue up their execution using setTimeout. When the setTimeout fires, acquire a lock on the task
-  //  and execute it. This ensures the task is only executed once even if there are many available task handlers
+  //  and execute it. This ensures the task is only executed once even if there are many available task handlers. This
+  //  feature should be optional
   /**
    * Starts the loop that fetches tasks and executes them every intervalMs. By default, the interval is 30 seconds.
    * This means, every 30 seconds PgTaskScheduler will fetch all tasks that are ready to be executed and execute them.
+   * To ensure on-time execution, tasks should be scheduled at least intervalMs in the future.
    * @param intervalMs
    */
   @CheckInitialized

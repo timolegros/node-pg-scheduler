@@ -1,15 +1,17 @@
 # Typescript Project Boiler Place
+
 This is a template for Typescript projects that require strict tsconfig, eslint, and prettier rules.
 
 ## Default Assumptions
+
 - `yarn`: This project uses yarn v1. All commands should be run with yarn.
 - `eslint`: Uses the default configuration.
 - `prettier`: Uses the default configuration.
 - `tsconfig`: Uses the default configuration.
 - Default branch: The default branch is `main`.
 
-
 ## Default Commands
+
 - `start-dev`: Runs `src/server.ts` with `ts-node-dev` meaning the file is automatically re-run when changes are detected.
 - `build`: Compiles all Typescript files under `src/` and outputs them to `build/`.
 - `check-types`: Uses `tsc` to check all types without emitting any `.js` files.
