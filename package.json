@@ -28,6 +28,7 @@
     "typescript": "5.0.4"
   },
   "dependencies": {
+    "loglevel": "^1.8.1",
     "pg": "^8.11.3"
   }
 }

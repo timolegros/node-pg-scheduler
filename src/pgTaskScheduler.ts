@@ -1,37 +1,58 @@
 import { Client, ClientConfig } from "pg";
-import { createTasksTable } from "./pg/queries";
+import {createSchedulerTable, createTasksTable} from "./pg/queries";
 import { CheckInitialized } from "./util";
 import { TaskManager } from "./pg/taskManager";
 import { TaskSchedulerOptions } from "./pg/types";
 import {AbstractHandlerManager} from "./pg/handler/types";
 import { CentralizedHandlerManager } from "./pg/handler/centralizedManager";
 import { DistributedHandlerManager } from "./pg/handler/distributedManager";
+import log, {LogLevelDesc} from 'loglevel';
 
 export class PgTaskScheduler {
-  private autoClearOldTasks: boolean = true;
+  private readonly distributed: boolean;
+  private readonly pingInterval: number;
+  private readonly logLevel: LogLevelDesc;
+
+  private concurrency: number = 0;
+  private timeoutExecution: boolean;
+  private intervalId: number;
+  private schedulerId: number;
 
   private client: Client;
-  protected initialized: boolean = false;
-  private concurrentlyExecutingTasks: number = 0;
-  private timeoutExecution: boolean;
-  private distributed: boolean;
-
   private taskManager: TaskManager;
   private handlerManager: AbstractHandlerManager;
 
-  private backend: string;
+  protected initialized: boolean = false;
 
+
+  /**
+   * Create a new PgTaskScheduler instance. The options object is used to configure the scheduler.
+   * @param {Object} options - An object containing options to configure the scheduler.
+   * @param {number} options.concurrency - The number of tasks that can be executed in parallel. Defaults to 25.
+   * @param {boolean} options.exactExecution - Whether to execute tasks at the exact scheduled time by using setTimeout.
+   * Defaults to true.
+   * @param {boolean} options.distributed - Whether to use a distributed or centralized handler manager. Defaults to
+   * false.
+   * @param {number} options.pingInterval - Interval at which to ping the scheduler table to ensure the scheduler is
+   * running. Defaults to 5 minutes.
+   * @param {string} options.logLevel - The log level to use for the scheduler. Defaults to 'warn'.
+   */
   constructor({
-    concurrentlyExecutingTasks,
-    timeoutExecution,
+    concurrency,
+    exactExecution,
     distributed,
-    backend,
-  }: TaskSchedulerOptions) {
-    this.timeoutExecution = timeoutExecution || true;
-    this.concurrentlyExecutingTasks = concurrentlyExecutingTasks || 25;
+    pingInterval,
+    logLevel,
+  }?: TaskSchedulerOptions) {
+    this.timeoutExecution = exactExecution || true;
+    this.concurrency = concurrency || 25;
     this.distributed = distributed || false;
-    this.backend = backend;
-    this.taskManager = new TaskManager();
+    this.pingInterval = pingInterval || 300000;
+    this.logLevel = logLevel || 'warn';
+    log.setLevel(this.logLevel, false);
+    this.taskManager = new TaskManager({
+      autoClearOldTasks: true,
+    });
 
     if (distributed) {
       this.handlerManager = new DistributedHandlerManager();
@@ -47,17 +68,13 @@ export class PgTaskScheduler {
     });
     await this.client.connect();
 
-    // create the tasks table if it doesn't exist
-    try {
-      await this.client.query(createTasksTable);
-    } catch (e) {
-      console.error("Error creating tasks table", e);
-      return;
-    }
+    await this.taskManager.init(this.client);
+    await this.handlerManager.init(this.client);
 
-    // clear old tasks if autoClearOldTasks is true
-    if (this.autoClearOldTasks) {
-      // await this.clearOldTasks();
+    if (this.distributed) {
+      await this.client.query(createSchedulerTable);
+      this.schedulerId = await this.registerScheduler();
+      this.intervalId = this.infinitePingLoop();
     }
 
     this.initialized = true;
@@ -87,9 +104,26 @@ export class PgTaskScheduler {
     // // commit the transaction
   }
 
+  // return the interval id
+  private infinitePingLoop(): ReturnType<number> {
+    return setInterval(async () => {
+      await this.client.query("SELECT 1");
+    }, this.pingInterval);
+  }
+
+  private async registerScheduler(): Promise<number> {
+    const result = await this.client.query(``);
+    return result.rows[0].id;
+  }
+
   @CheckInitialized
   public async destroy() {
     await this.client.end();
     this.initialized = false;
+
+    if (this.distributed && this.intervalId != 0) {
+      clearInterval(this.intervalId);
+      this.intervalId = 0;
+    }
   }
 }

@@ -11,7 +11,7 @@ export class DistributedHandlerManager extends AbstractHandlerManager {
     this.taskHandlers = {};
   }
 
-  protected async init(client: Client) {
+  public async init(client: Client) {
     this.client = client;
     await this.client.query(createHandlerTable);
     this.initialized = true;
@@ -21,7 +21,8 @@ export class DistributedHandlerManager extends AbstractHandlerManager {
   @CheckInitialized
   public async registerTaskHandler(name: string, handler: () => Promise<void>) {
     if (this.taskHandlers[name]) {
-      throw new Error(`Task handler ${name} already registered`);
+      // throw new Error(`Task handler ${name} already registered`);
+      return false;
     }
 
     this.taskHandlers[name] = handler;

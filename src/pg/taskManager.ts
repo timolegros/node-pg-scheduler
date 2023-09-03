@@ -1,10 +1,30 @@
 import { CheckInitialized } from "../util";
 import { Client } from "pg";
 import { TaskQueryOptions } from "./types";
+import {createTasksTable} from "./queries";
+
+export type TaskManagerOptions = {
+  autoClearOldTasks?: boolean;
+}
 
 export class TaskManager {
-  private initialized: boolean = false;
+  private readonly autoClearOldTasks: boolean;
   private client: Client;
+  private initialized: boolean = false;
+
+  constructor(options: TaskManagerOptions) {
+    this.autoClearOldTasks = options.autoClearOldTasks || true;
+  }
+
+  public async init(client: Client) {
+    this.client = client;
+    await this.client.query(createTasksTable);
+
+    if (this.autoClearOldTasks) {
+      await this.clearOldTasks();
+    }
+    this.initialized = true;
+  }
 
   // TODO: should jobs added from a centralized manager have a flag to indicate that they are not to be executed by
   //  the distributed manager? In other words, how does the centralized manager interact with the distributed manager?

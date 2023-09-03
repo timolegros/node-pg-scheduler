@@ -8,7 +8,7 @@ export class CentralizedHandlerManager extends AbstractHandlerManager {
     this.taskHandlers = {};
   }
 
-  protected async init(client: Client) {
+  public async init(client: Client) {
     this.client = client;
     this.initialized = true;
   }

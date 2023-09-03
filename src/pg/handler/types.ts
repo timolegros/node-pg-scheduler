@@ -12,7 +12,7 @@ export abstract class AbstractHandlerManager {
     this.taskHandlers = {};
   }
 
-  protected abstract async init(client: Client): Promise<void>;
+  public abstract async init(client: Client): Promise<void>;
 
   // Class instances should only fetch tasks for which they have a registered handler
   public abstract async registerTaskHandler(name: string, handler: TaskHandlerType): Promise<boolean>
