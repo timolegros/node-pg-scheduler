@@ -27,7 +27,7 @@ export class PgTaskScheduler {
   private taskManager: CentralizedTaskManager;
   private handlerManager: CentralizedHandlerManager;
 
-  private initialized: boolean = false;
+  private initialized = false;
 
   // Integer ids of tasks that are set to run with setTimeout
   private timeoutTaskIds = new Set<number>();
@@ -80,7 +80,7 @@ export class PgTaskScheduler {
     // }
   }
 
-  public async init() {
+  public async init(): Promise<void> {
     log.trace("init(): Initializing scheduler");
     await this.client.connect();
     log.debug("Connected to database");
@@ -110,7 +110,7 @@ export class PgTaskScheduler {
   }
 
   @CheckInitialized
-  private async startSingleExecution() {
+  private async startSingleExecution(): Promise<void> {
     log.trace("startSingleExecution(): Starting single execution");
     const tasks = await this.taskManager.getExecutableTasks();
     const handlers = this.handlerManager.getTaskHandlers();
@@ -133,7 +133,7 @@ export class PgTaskScheduler {
   }
 
   @CheckInitialized
-  private async startIntervalExecution() {
+  private async startIntervalExecution(): Promise<void> {
     log.trace("startIntervalExecution(): Starting interval execution");
     await this.startSingleExecution();
     this.intervalId = setInterval(async () => {
@@ -143,7 +143,7 @@ export class PgTaskScheduler {
   }
 
   @CheckInitialized
-  private async startRealtimeExecution() {
+  private async startRealtimeExecution(): Promise<void> {
     log.trace("startRealtimeExecution(): Starting realtime execution");
     await this.realtimeExecution();
     this.intervalId = setInterval(async () => {
@@ -152,7 +152,7 @@ export class PgTaskScheduler {
     log.trace("startRealtimeExecution(): Finished realtime execution");
   }
 
-  private async realtimeExecution() {
+  private async realtimeExecution(): Promise<void> {
     log.trace("realtimeExecution(): Starting realtime execution");
     const tasks = await this.taskManager.getTasks({
       notIds: Array.from(this.timeoutTaskIds),

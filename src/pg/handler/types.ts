@@ -5,7 +5,7 @@ export type TaskHandlerMapType = Record<string, TaskHandlerType>;
 
 export abstract class AbstractHandlerManager {
   protected taskHandlers: TaskHandlerMapType;
-  protected initialized: boolean = false;
+  protected initialized = false;
 
   protected constructor() {
     this.taskHandlers = {};

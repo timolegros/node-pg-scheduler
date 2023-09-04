@@ -1,3 +1,4 @@
+/* eslint-disable */
 export function CheckInitialized(
   target: any,
   propertyKey: string,
@@ -19,3 +20,4 @@ export function CheckInitialized(
 
   return descriptor;
 }
+/* eslint-enable */

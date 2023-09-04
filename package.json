@@ -13,7 +13,10 @@
     "lint-branch": "./scripts/lint-branch.sh",
     "lint-all": "NODE_OPTIONS=\"--max-old-space-size=4096\" eslint './src/**/*.ts'",
     "format": "prettier --write .",
-    "add-prettier-precommit": "grep -q -s 'prettier --write' ./.git/hooks/pre-commit || cat ./scripts/prettier-new-work.sh >> ./.git/hooks/pre-commit"
+    "add-prettier-precommit": "grep -q -s 'prettier --write' ./.git/hooks/pre-commit || cat ./scripts/prettier-new-work.sh >> ./.git/hooks/pre-commit",
+    "test": "ts-mocha -p tsconfig.json ./src/**/*.spec.ts",
+    "test-integration": "ts-mocha -p tsconfig.json ./src/**/*.integration.ts",
+    "test-unit": "ts-mocha -p tsconfig.json ./src/**/*.unit.ts"
   },
   "license": "UNLICENSED",
   "devDependencies": {
@@ -24,6 +27,7 @@
     "eslint": "^8.44.0",
     "eslint-config-prettier": "^8.8.0",
     "prettier": "^2.8.8",
+    "ts-mocha": "^10.0.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "5.0.4"
   },
