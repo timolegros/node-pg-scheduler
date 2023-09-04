@@ -1,4 +1,4 @@
-import { CheckInitialized } from "../../util";
+import { CheckInitialized } from "../util";
 import { TaskManagerOptions, TaskType } from "./types";
 import { AbstractTaskManager } from "./abstractTaskManager";
 

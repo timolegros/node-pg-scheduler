@@ -3,7 +3,7 @@ import {
   TaskHandlerMapType,
   TaskHandlerType,
 } from "./types";
-import { CheckInitialized } from "../../util";
+import { CheckInitialized } from "../util";
 
 export class CentralizedHandlerManager extends AbstractHandlerManager {
   constructor() {

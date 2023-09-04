@@ -1,4 +1,4 @@
-import { CheckInitialized } from "../../util";
+import { CheckInitialized } from "../util";
 import { Client } from "pg";
 import { createTasksTable } from "../queries";
 import { TaskManagerOptions, TaskQueryOptions, TaskType } from "./types";

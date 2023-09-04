@@ -1,16 +1,16 @@
 import { Client, ClientConfig } from "pg";
-import { createSchedulerTable } from "./pg/queries";
+import { createSchedulerTable } from "./queries";
 import { CheckInitialized } from "./util";
-import { CentralizedTaskManager } from "./pg/task/centralizedTaskManager";
+import { CentralizedTaskManager } from "./task/centralizedTaskManager";
 import {
   ExecutionMode,
   ExecutionModeType,
   TaskSchedulerOptions,
-} from "./pg/types";
-import { TaskHandlerType } from "./pg/handler/types";
-import { CentralizedHandlerManager } from "./pg/handler/centralizedHandlerManager";
+} from "./types";
+import { TaskHandlerType } from "./handler/types";
+import { CentralizedHandlerManager } from "./handler/centralizedHandlerManager";
 import log, { LogLevelDesc } from "loglevel";
-import { TaskType } from "./pg/task/types";
+import { TaskType } from "./task/types";
 
 export class PgTaskScheduler {
   private readonly distributed: boolean;
