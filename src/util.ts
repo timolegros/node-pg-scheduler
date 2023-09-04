@@ -1,6 +1,3 @@
-import { CreateTaskSchedulerOptions } from "./pg/types";
-import { TaskScheduler } from "./taskScheduler";
-
 export function CheckInitialized(
   target: any,
   propertyKey: string,
@@ -21,11 +18,4 @@ export function CheckInitialized(
   };
 
   return descriptor;
-}
-
-function createTaskScheduler({
-  type,
-  options,
-}: CreateTaskSchedulerOptions): TaskScheduler {
-  return new TaskScheduler({});
 }

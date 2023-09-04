@@ -1,23 +1,23 @@
-import { CheckInitialized } from "../util";
+import { CheckInitialized } from "../../util";
 import { Client } from "pg";
-import { TaskQueryOptions } from "./types";
-import {createTasksTable} from "./queries";
+import { createTasksTable } from "../queries";
+import { TaskManagerOptions, TaskQueryOptions, TaskType } from "./types";
+import { AbstractHandlerManager } from "../handler/types";
 
-export type TaskManagerOptions = {
-  autoClearOldTasks?: boolean;
-}
+export abstract class AbstractTaskManager {
+  protected readonly autoClearOldTasks: boolean;
+  protected readonly maxTaskAge: number;
 
-export class TaskManager {
-  private readonly autoClearOldTasks: boolean;
-  private client: Client;
-  private initialized: boolean = false;
+  protected client: Client;
+  protected initialized: boolean = false;
 
-  constructor(options: TaskManagerOptions) {
+  protected constructor(options: TaskManagerOptions) {
+    this.client = options.client;
     this.autoClearOldTasks = options.autoClearOldTasks || true;
+    this.maxTaskAge = options.maxTaskAge || 86400000;
   }
 
-  public async init(client: Client) {
-    this.client = client;
+  public async init() {
     await this.client.query(createTasksTable);
 
     if (this.autoClearOldTasks) {
@@ -35,6 +35,7 @@ export class TaskManager {
    * @param name
    * @param data
    * @param category
+   * @param handlerManager
    * @returns {Promise<number>} The integer id of the task inserted into the database.
    */
   @CheckInitialized
@@ -42,12 +43,21 @@ export class TaskManager {
     date: Date,
     name: string,
     data: string,
-    category: string | null = null
+    category: string | null = null,
+    handlerManager: AbstractHandlerManager
   ): Promise<number> {
     // ensure date is at least 1 minute in the future
     // TODO: adjust this and see if immediate time is viable
-    if (date <= Date.now() + 60000) {
+    if (date.getTime() <= Date.now() + 60000) {
       throw new Error("Date must be in the future");
+    }
+
+    // TODO: only allows tasks to be scheduled for handlers that are registered with the handler manager
+    //  should expand so that tasks can be scheduled for handlers that are not registered with the handler manager
+    //  when using the distributed manager
+    const taskHandlers = handlerManager.getTaskHandlers();
+    if (!taskHandlers[name]) {
+      throw new Error(`No task handler registered for ${name}`);
     }
 
     // insert the task into the database
@@ -70,11 +80,14 @@ export class TaskManager {
 
   @CheckInitialized
   public async removeTasks(options: TaskQueryOptions) {
-    const filters= this.buildTaskFilterQuery(options);
-    const result = await this.client.query(`
+    const filters = this.buildTaskFilterQuery(options);
+    const result = await this.client.query(
+      `
       DELETE FROM tasks
       WHERE ${filters.filterString};
-    `, filters.values);
+    `,
+      filters.values
+    );
 
     return result.rowCount;
   }
@@ -84,15 +97,35 @@ export class TaskManager {
    * @param options An options object that can contain an id, name, or category.
    */
   @CheckInitialized
-  public async getTasks(options: TaskQueryOptions) {
-    const filters = this.buildTaskFilterQuery(options);
-    const result = await this.client.query(`
+  public async getTasks(options?: TaskQueryOptions): Promise<TaskType[]> {
+    if (!options) {
+      const { rows } = await this.client.query(`
+        SELECT * FROM tasks;
+      `);
+      return rows;
+    } else {
+      const filters = this.buildTaskFilterQuery(options);
+      const result = await this.client.query(
+        `
       SELECT * FROM tasks
       WHERE ${filters.filterString};
-    `, filters.values);
+    `,
+        filters.values
+      );
 
-    return result.rows;
+      return result.rows;
+    }
   }
+
+  /**
+   * Gets all tasks that are ready to be executed. This means tasks returned by this function are not locked in the
+   * database by another
+   * @param handlerNames
+   * @protected
+   */
+  protected abstract getExecutableTasks(
+    handlerNames?: string[]
+  ): Promise<TaskType[]>;
 
   // Used to clean up tasks that were never picked up by a task handler.
   // This will only occur if a tasks execution time passes while there is no registered task handler.
@@ -100,9 +133,12 @@ export class TaskManager {
   @CheckInitialized
   public async clearOldTasks() {}
 
-  private buildTaskFilterQuery(options: TaskQueryOptions): { filterString: string, values: string[] } {
+  private buildTaskFilterQuery(options: TaskQueryOptions): {
+    filterString: string;
+    values: any[];
+  } {
     const filters: string[] = [];
-    const filterValues: string[] = [];
+    const filterValues: any[] = [];
     if (options.id) {
       filters.push("id = $1");
       filterValues.push(String(options.id));
@@ -112,6 +148,9 @@ export class TaskManager {
     } else if (options.category) {
       filters.push(`category = $${filters.length + 1}}`);
       filterValues.push(options.category);
+    } else if (options.notIds && options.notIds.length > 0) {
+      filters.push(`id NOT IN ($${filters.length + 1})`);
+      filterValues.push(options.notIds);
     }
 
     if (filters.length === 0) {

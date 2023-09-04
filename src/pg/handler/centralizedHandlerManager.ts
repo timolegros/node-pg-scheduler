@@ -1,27 +1,32 @@
-import {AbstractHandlerManager, TaskHandlerMapType, TaskHandlerType} from "./types";
-import {Client} from "pg";
-import {CheckInitialized} from "../../util";
+import {
+  AbstractHandlerManager,
+  TaskHandlerMapType,
+  TaskHandlerType,
+} from "./types";
+import { CheckInitialized } from "../../util";
 
 export class CentralizedHandlerManager extends AbstractHandlerManager {
-  protected constructor() {
+  constructor() {
     super();
     this.taskHandlers = {};
   }
 
-  public async init(client: Client) {
-    this.client = client;
+  public async init() {
     this.initialized = true;
   }
 
   // TODO: add generalized handler callback?
   // Class instances should only fetch tasks for which they have a registered handler
   @CheckInitialized
-  public async registerTaskHandler(name: string, handler: TaskHandlerType): Promise<boolean> {
+  public async registerTaskHandler(
+    name: string,
+    handler: TaskHandlerType
+  ): Promise<boolean> {
     if (this.taskHandlers[name]) {
       return false;
     }
     this.taskHandlers[name] = handler;
-    return true
+    return true;
   }
 
   @CheckInitialized
@@ -30,7 +35,7 @@ export class CentralizedHandlerManager extends AbstractHandlerManager {
       return false;
     }
     delete this.taskHandlers[name];
-    return true
+    return true;
   }
 
   @CheckInitialized
