@@ -197,6 +197,7 @@ export class PgTaskScheduler {
     log.trace("realtimeExecution(): Finished realtime execution");
   }
 
+  // TODO: use pg.pool and set max connections as concurrency - 1 txn per connection
   @CheckInitialized
   private async executeTask(
     task: TaskType,
