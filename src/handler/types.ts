@@ -21,5 +21,5 @@ export abstract class AbstractHandlerManager {
 
   public abstract removeTaskHandler(name: string): Promise<boolean>;
 
-  public abstract getTaskHandlers(): typeof this.taskHandlers;
+  public abstract getTaskHandlers(): TaskHandlerMapType;
 }

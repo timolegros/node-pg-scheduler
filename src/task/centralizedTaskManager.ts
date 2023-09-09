@@ -1,6 +1,7 @@
 import { CheckInitialized } from "../util";
 import { TaskManagerOptions, TaskType } from "./types";
 import { AbstractTaskManager } from "./abstractTaskManager";
+import log from "loglevel";
 
 export class CentralizedTaskManager extends AbstractTaskManager {
   constructor(options: TaskManagerOptions) {
@@ -14,14 +15,16 @@ export class CentralizedTaskManager extends AbstractTaskManager {
    */
   @CheckInitialized
   public async getExecutableTasks(): Promise<TaskType[]> {
+    log.trace("Getting executable tasks");
     const result = await this.client.query(
       `
       SELECT * FROM tasks
-      WHERE date <= NOW() AND date > (NOW() - $1)
+      WHERE date <= CURRENT_TIMESTAMP AND date > (CURRENT_TIMESTAMP - ($1 * interval '1 millisecond'))
       FOR UPDATE SKIP LOCKED;
     `,
       [this.maxTaskAge]
     );
+    console.debug("Executable tasks:", JSON.stringify(result.rows, null, 2));
     return result.rows;
   }
 

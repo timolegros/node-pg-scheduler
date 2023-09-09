@@ -24,7 +24,7 @@ export class PgTaskScheduler {
   private intervalId: NodeJS.Timeout | undefined;
   private schedulerId: number | undefined;
 
-  private taskManager: CentralizedTaskManager;
+  private readonly _taskManager: CentralizedTaskManager;
   private handlerManager: CentralizedHandlerManager;
 
   private initialized = false;
@@ -60,16 +60,16 @@ export class PgTaskScheduler {
     this.client = new Client({
       ...pgClientConfig,
     });
-    this.executionMode = executionMode || ExecutionMode.single;
-    this.concurrency = concurrency || 25;
-    this.distributed = distributed || false;
-    this.handleInterval = handleInterval || 30000;
-    this.pingInterval = pingInterval || 300000;
-    this.logLevel = logLevel || "warn";
+    this.executionMode = executionMode ?? ExecutionMode.single;
+    this.concurrency = concurrency ?? 25;
+    this.distributed = distributed ?? false;
+    this.handleInterval = handleInterval ?? 30000;
+    this.pingInterval = pingInterval ?? 300000;
+    this.logLevel = logLevel ?? "warn";
     log.setLevel(this.logLevel, false);
-    this.taskManager = new CentralizedTaskManager({
+    this._taskManager = new CentralizedTaskManager({
       client: this.client,
-      autoClearOldTasks: true,
+      autoClearOldTasks: false,
     });
 
     // if (distributed) {
@@ -85,7 +85,7 @@ export class PgTaskScheduler {
     await this.client.connect();
     log.debug("Connected to database");
 
-    await this.taskManager.init();
+    await this._taskManager.init();
     await this.handlerManager.init();
 
     if (this.distributed) {
@@ -112,13 +112,12 @@ export class PgTaskScheduler {
   @CheckInitialized
   private async startSingleExecution(): Promise<void> {
     log.trace("startSingleExecution(): Starting single execution");
-    const tasks = await this.taskManager.getExecutableTasks();
+    const tasks = await this._taskManager.getExecutableTasks();
     const handlers = this.handlerManager.getTaskHandlers();
     log.debug(
       "Fetched tasks:",
       JSON.stringify(tasks, null, 2),
-      "\n",
-      "Fetched handlers:",
+      "\nFetched handlers:",
       JSON.stringify(Object.keys(handlers), null, 2)
     );
 
@@ -154,7 +153,7 @@ export class PgTaskScheduler {
 
   private async realtimeExecution(): Promise<void> {
     log.trace("realtimeExecution(): Starting realtime execution");
-    const tasks = await this.taskManager.getTasks({
+    const tasks = await this._taskManager.getTasks({
       notIds: Array.from(this.timeoutTaskIds),
     });
     const handlers = this.handlerManager.getTaskHandlers();
@@ -260,5 +259,13 @@ export class PgTaskScheduler {
   private async registerScheduler(): Promise<number> {
     const result = await this.client.query(``);
     return result.rows[0].id;
+  }
+
+  public async scheduleTask(date: Date, name: string, data: string, category?: string): Promise<void> {
+    await this._taskManager.scheduleTask(date, name, data, category ?? null, this.handlerManager);
+  }
+
+  public async registerTaskHandler(name: string, handler: TaskHandlerType): Promise<boolean> {
+    return await this.handlerManager.registerTaskHandler(name, handler);
   }
 }
