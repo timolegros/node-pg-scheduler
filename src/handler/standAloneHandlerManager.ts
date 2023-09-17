@@ -5,7 +5,7 @@ import {
 } from "./types";
 import { CheckInitialized } from "../util";
 
-export class CentralizedHandlerManager extends AbstractHandlerManager {
+export class StandAloneHandlerManager extends AbstractHandlerManager {
   constructor() {
     super();
     this.taskHandlers = {};

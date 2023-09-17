@@ -1,4 +1,4 @@
-import { Client } from "pg";
+import type { Pool } from "pg";
 
 export type TaskType = {
   id: number;
@@ -9,8 +9,8 @@ export type TaskType = {
 };
 
 export type TaskManagerOptions = {
-  client: Client;
-  autoClearOldTasks?: boolean;
+  pool: Pool;
+  clearOutdatedTasks?: boolean;
   maxTaskAge?: number;
 };
 

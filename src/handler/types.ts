@@ -1,4 +1,4 @@
-import { Client } from "pg";
+import { Pool } from "pg";
 
 export type TaskHandlerType = (data: any) => Promise<void>;
 export type TaskHandlerMapType = Record<string, TaskHandlerType>;
@@ -11,7 +11,7 @@ export abstract class AbstractHandlerManager {
     this.taskHandlers = {};
   }
 
-  public abstract init(client?: Client): Promise<void>;
+  public abstract init(pool?: Pool): Promise<void>;
 
   // Class instances should only fetch tasks for which they have a registered handler
   public abstract registerTaskHandler(

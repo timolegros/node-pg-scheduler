@@ -20,5 +20,5 @@ module.exports = {
     "@typescript-eslint/no-unsafe-return": "warn",
     "@typescript-eslint/restrict-template-expressions": "warn",
     "@typescript-eslint/no-empty-function": "warn",
-  }
+  },
 };
