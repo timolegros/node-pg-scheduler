@@ -5,6 +5,10 @@ import log from "loglevel";
 import { StandAloneSchedulerOptions } from "./types";
 import { CheckInitialized } from "../util";
 
+// TODO: REQUIRE A NAME FOR EACH SCHEDULER SO TASKS FROM DIFFERENT STAND ALONE SCHEDULERS
+//  DON'T INTERFERE WITH EACH OTHER --- duplicate naming should be a user worry
+//  unless we want to add a check for duplicate names but also with pinging and
+//  expiring names that haven't pinged in a while
 export class StandAloneScheduler extends AbstractScheduler {
   protected taskManager: StandAloneTaskManager;
   protected handlerManager: StandAloneHandlerManager;
