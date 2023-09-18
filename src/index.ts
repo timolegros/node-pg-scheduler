@@ -1,1 +1,1 @@
-export { PgTaskScheduler } from "./scheduler/pgTaskScheduler";
+export { StandAloneScheduler } from "./scheduler/standAloneScheduler";

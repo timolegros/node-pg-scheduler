@@ -1,5 +1,5 @@
-import {PoolConfig} from "pg";
-import {ExecutionModeType, LogLevels} from "../types";
+import { PoolConfig } from "pg";
+import { ExecutionModeType, LogLevels } from "../types";
 
 export type StandAloneSchedulerOptions = {
   executionMode: ExecutionModeType;
@@ -12,4 +12,4 @@ export type StandAloneSchedulerOptions = {
 
 export type DistributedSchedulerOptions = StandAloneSchedulerOptions & {
   pingInterval?: number;
-}
+};

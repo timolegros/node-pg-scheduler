@@ -2,17 +2,19 @@ import log from "loglevel";
 import { Pool, PoolConfig } from "pg";
 import { StandAloneTaskManager } from "../task/standAloneTaskManager";
 import { StandAloneHandlerManager } from "../handler/standAloneHandlerManager";
-import {ExecutionModeType, LogLevels} from "../types";
+import { ExecutionMode, ExecutionModeType, LogLevels } from "../types";
 import { CheckInitialized } from "../util";
 import { TaskType } from "../task/types";
 import { TaskHandlerType } from "../handler/types";
-import {DistributedHandlerManager} from "../handler/distributedHandlerManager";
+import { DistributedHandlerManager } from "../handler/distributedHandlerManager";
 
 export abstract class AbstractScheduler {
   protected readonly executionMode: ExecutionModeType;
   protected readonly pool: Pool;
   protected abstract taskManager: StandAloneTaskManager;
-  protected abstract handlerManager: StandAloneHandlerManager | DistributedHandlerManager;
+  protected abstract handlerManager:
+    | StandAloneHandlerManager
+    | DistributedHandlerManager;
   protected initialized = false;
 
   // realtime execution properties
@@ -33,6 +35,15 @@ export abstract class AbstractScheduler {
     this.pool = new Pool(pgPoolConfig);
     this.handleInterval = handleInterval ?? 30000;
     this.executionMode = executionMode;
+  }
+
+  @CheckInitialized
+  public async start(): Promise<void> {
+    if (this.executionMode === ExecutionMode.single) {
+      await this.singleExecution();
+    } else {
+      await this.startRealtimeExecution();
+    }
   }
 
   @CheckInitialized
@@ -132,9 +143,13 @@ export abstract class AbstractScheduler {
     this.initialized = false;
     await this.pool.end();
 
-    if (this.executionMode === 'realtime' && this.intervalId) {
+    if (this.executionMode === "realtime" && this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = undefined;
     }
+  }
+
+  public isInitialized(): boolean {
+    return this.initialized;
   }
 }

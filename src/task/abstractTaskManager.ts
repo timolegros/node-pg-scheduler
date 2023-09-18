@@ -1,12 +1,19 @@
 import { CheckInitialized } from "../util";
-import { Client, Pool } from "pg";
+import { Pool } from "pg";
 import { createTasksTable } from "../queries";
 import { TaskManagerOptions, TaskQueryOptions, TaskType } from "./types";
 import { AbstractHandlerManager } from "../handler/types";
 import log from "loglevel";
 
+export const Errors = {
+  INVALID_DATE: "Date must be in the future",
+  TASK_INSERT_ERROR: "Error inserting task",
+  NO_QUERY_FILTERS: "No query filters provided",
+  NO_REGISTERED_HANDLER: (name: string) => `No handler registered for ${name}`,
+};
+
 export abstract class AbstractTaskManager {
-  protected readonly autoClearOldTasks: boolean;
+  protected readonly clearOutdatedTasks: boolean;
   protected readonly maxTaskAge: number;
 
   protected pool: Pool;
@@ -14,19 +21,23 @@ export abstract class AbstractTaskManager {
 
   protected constructor(options: TaskManagerOptions) {
     this.pool = options.pool;
-    this.autoClearOldTasks = options.clearOutdatedTasks ?? true;
+    this.clearOutdatedTasks = options.clearOutdatedTasks ?? true;
     this.maxTaskAge = options.maxTaskAge ?? 86400000;
     log.debug(
       "Created new task manager with\n" +
-        `\tautoClearOldTasks:${this.autoClearOldTasks}\n` +
+        `\tautoClearOldTasks:${String(this.clearOutdatedTasks)}\n` +
         `\tmaxTaskAge: ${this.maxTaskAge}`
     );
   }
 
   public async init() {
+    if (this.initialized) {
+      return;
+    }
+
     await this.pool.query(createTasksTable);
 
-    if (this.autoClearOldTasks) {
+    if (this.clearOutdatedTasks) {
       await this.clearOldTasks();
     }
     this.initialized = true;
@@ -52,18 +63,15 @@ export abstract class AbstractTaskManager {
     category: string | null = null,
     handlerManager: AbstractHandlerManager
   ): Promise<number> {
-    // ensure date is at least 1 minute in the future
-    // TODO: adjust this and see if immediate time is viable
-    if (date.getTime() <= Date.now() + 60000) {
-      throw new Error("Date must be in the future");
+    if (date.getTime() <= Date.now()) {
+      throw new Error(Errors.INVALID_DATE);
     }
 
-    // TODO: only allows tasks to be scheduled for handlers that are registered with the handler manager
-    //  should expand so that tasks can be scheduled for handlers that are not registered with the handler manager
-    //  when using the distributed manager
+    // TODO: this method will need to be overriden for the distributed
+    //  scheduler to handle the case where the task is scheduled for another scheduler
     const taskHandlers = handlerManager.getTaskHandlers();
     if (!taskHandlers[name]) {
-      throw new Error(`No task handler registered for ${name}`);
+      throw new Error(Errors.NO_REGISTERED_HANDLER(name));
     }
 
     // insert the task into the database
@@ -84,7 +92,7 @@ export abstract class AbstractTaskManager {
     if (res.rows.length === 1) {
       return res.rows[0].id as number;
     } else {
-      throw new Error("Error inserting task");
+      throw new Error(Errors.TASK_INSERT_ERROR);
     }
   }
 
@@ -141,10 +149,31 @@ export abstract class AbstractTaskManager {
   // This will only occur if a tasks execution time passes while there is no registered task handler.
   // By default, this will execute automatically when the scheduler is instantiated.
   @CheckInitialized
-  public async clearOldTasks() {}
+  public async clearOldTasks() {
+    try {
+      const result = await this.pool.query(
+        `
+      WITH task_ids AS MATERIALIZED (
+        SELECT id
+        FROM tasks
+        WHERE date <= (CURRENT_TIMESTAMP - ($1 * interval '1 millisecond'))
+            FOR UPDATE SKIP LOCKED
+      ) DELETE FROM tasks
+      WHERE id IN (SELECT id FROM task_ids);
+    `,
+        [this.maxTaskAge]
+      );
+      log.debug(
+        `Cleared ${result.rowCount} tasks that were older than ${this.maxTaskAge} ms`
+      );
+    } catch (e) {
+      log.error(`Failed to clear old tasks`, e);
+    }
+  }
 
   private buildTaskFilterQuery(options: TaskQueryOptions): {
     filterString: string;
+    // TODO: update type
     values: any[];
   } {
     const filters: string[] = [];
@@ -164,9 +193,13 @@ export abstract class AbstractTaskManager {
     }
 
     if (filters.length === 0) {
-      throw new Error("No options provided");
+      throw new Error(Errors.NO_QUERY_FILTERS);
     }
 
     return { filterString: filters.join(" AND "), values: filterValues };
+  }
+
+  public isInitialized(): boolean {
+    return this.initialized;
   }
 }

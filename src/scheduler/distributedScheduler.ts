@@ -1,8 +1,8 @@
-import {AbstractScheduler} from "./abstractScheduler";
-import {DistributedSchedulerOptions} from "./types";
-import {DistributedHandlerManager} from "../handler/distributedHandlerManager";
+import { AbstractScheduler } from "./abstractScheduler";
+import { DistributedSchedulerOptions } from "./types";
+import { DistributedHandlerManager } from "../handler/distributedHandlerManager";
 import log from "loglevel";
-import {createSchedulerTable} from "../queries";
+import { createSchedulerTable } from "../queries";
 
 export class DistributedScheduler extends AbstractScheduler {
   protected taskManager: any;
@@ -29,12 +29,6 @@ export class DistributedScheduler extends AbstractScheduler {
     await this.handlerManager.init();
     await this.taskManager.init();
     this.initialized = true;
-
-    if (this.executionMode === "single") {
-      await this.singleExecution();
-    } else {
-      await this.startRealtimeExecution();
-    }
 
     log.trace("Initializing distributed scheduler");
     await this.pool.query(createSchedulerTable);

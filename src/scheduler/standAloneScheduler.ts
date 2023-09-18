@@ -2,9 +2,9 @@ import { AbstractScheduler } from "./abstractScheduler";
 import { StandAloneHandlerManager } from "../handler/standAloneHandlerManager";
 import { StandAloneTaskManager } from "../task/standAloneTaskManager";
 import log from "loglevel";
-import {StandAloneSchedulerOptions} from "./types";
-import {ExecutionMode} from "../types";
-import {CheckInitialized} from "../util";
+import { StandAloneSchedulerOptions } from "./types";
+import { ExecutionMode } from "../types";
+import { CheckInitialized } from "../util";
 
 export class StandAloneScheduler extends AbstractScheduler {
   protected taskManager: StandAloneTaskManager;
@@ -30,12 +30,6 @@ export class StandAloneScheduler extends AbstractScheduler {
     await this.handlerManager.init();
     await this.taskManager.init();
     this.initialized = true;
-
-    if (this.executionMode === ExecutionMode.single) {
-      await this.singleExecution();
-    } else {
-      await this.startRealtimeExecution();
-    }
   }
 
   @CheckInitialized

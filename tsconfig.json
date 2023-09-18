@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "experimentalDecorators": true
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts"]
 }

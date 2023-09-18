@@ -1,18 +1,15 @@
-import { PgTaskScheduler } from "../../src";
 import { ExecutionMode } from "../../src/types";
+import { StandAloneScheduler } from "../../src";
 
 async function main() {
-  const scheduler = new PgTaskScheduler(
-    {
-      executionMode: ExecutionMode.single,
-      distributed: false,
-      logLevel: "trace",
-    },
-    {
+  const scheduler = new StandAloneScheduler({
+    executionMode: ExecutionMode.single,
+    logLevel: "trace",
+    pgPoolConfig: {
       connectionString:
         "postgres://scheduler:scheduler_pswd@localhost:5432/node_pg_scheduler",
-    }
-  );
+    },
+  });
 
   await scheduler.init();
   const now = new Date();

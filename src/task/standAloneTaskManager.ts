@@ -16,7 +16,7 @@ export class StandAloneTaskManager extends AbstractTaskManager {
   @CheckInitialized
   public async getExecutableTasks(): Promise<TaskType[]> {
     log.trace("Getting executable tasks");
-    const result = await this.pool.query(
+    const result = await this.pool.query<TaskType>(
       `
       SELECT * FROM tasks
       WHERE date <= CURRENT_TIMESTAMP AND date > (CURRENT_TIMESTAMP - ($1 * interval '1 millisecond'))
@@ -25,14 +25,6 @@ export class StandAloneTaskManager extends AbstractTaskManager {
       [this.maxTaskAge]
     );
     console.debug("Executable tasks:", JSON.stringify(result.rows, null, 2));
-    return result.rows;
-  }
-
-  public async getAllUnlockedTasks(): Promise<TaskType[]> {
-    const result = await this.pool.query(`
-      SELECT * FROM tasks
-      FOR UPDATE SKIP LOCKED;
-    `);
     return result.rows;
   }
 }

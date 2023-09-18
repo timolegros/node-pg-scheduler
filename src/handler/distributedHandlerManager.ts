@@ -35,7 +35,7 @@
 //   public async getTaskHandlers() {}
 // }
 
-import {AbstractHandlerManager} from "./types";
+import { AbstractHandlerManager } from "./types";
 
 // @ts-ignore
 export class DistributedHandlerManager extends AbstractHandlerManager {

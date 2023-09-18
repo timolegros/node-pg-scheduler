@@ -1,3 +1,5 @@
+export const notInitializedError = (methodName: string) => `Cannot execute ${methodName} as 'initialized' is false.`
+
 /* eslint-disable */
 export function CheckInitialized(
   target: any,
@@ -12,12 +14,11 @@ export function CheckInitialized(
     if (this.initialized) {
       return originalMethod.apply(this, args);
     } else {
-      console.error(`Cannot execute ${propertyKey} as 'initialized' is false.`);
-      // You can return a default value or throw an error, as per requirements
-      return; // or throw new Error(...)
+      throw new Error(notInitializedError(propertyKey));
     }
   };
 
   return descriptor;
 }
 /* eslint-enable */
+
