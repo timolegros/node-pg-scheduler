@@ -20,6 +20,15 @@ describe("StandAloneScheduler", () => {
       await scheduler.init();
       expect(scheduler.isInitialized()).to.be.true;
     });
+
+    it("should not execute tasks that don\t have a handler", async () => {});
+    it("should not execute tasks that aren't due yet", async () => {});
+
+    it("should not throw an error if a task execution fails", async () => {});
+    it("should not delete a task if the handler failed to execute", async () => {});
+
+    it("should execute all executable tasks", async () => {});
+    it("should delete executed tasks", async () => {});
   });
   describe("Realtime Execution", () => {});
 });

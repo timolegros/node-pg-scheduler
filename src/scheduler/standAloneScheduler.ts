@@ -3,7 +3,6 @@ import { StandAloneHandlerManager } from "../handler/standAloneHandlerManager";
 import { StandAloneTaskManager } from "../task/standAloneTaskManager";
 import log from "loglevel";
 import { StandAloneSchedulerOptions } from "./types";
-import { ExecutionMode } from "../types";
 import { CheckInitialized } from "../util";
 
 export class StandAloneScheduler extends AbstractScheduler {
@@ -13,7 +12,7 @@ export class StandAloneScheduler extends AbstractScheduler {
   constructor(options: StandAloneSchedulerOptions) {
     super(
       options.pgPoolConfig,
-      options.logLevel || "error",
+      options.logLevel ?? "error",
       options.handleInterval,
       options.executionMode
     );
