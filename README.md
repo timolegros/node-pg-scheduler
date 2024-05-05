@@ -1,3 +1,5 @@
+[![Coverage Status](https://coveralls.io/repos/github/timolegros/node-pg-scheduler/badge.svg?branch=main)](https://coveralls.io/github/timolegros/node-pg-scheduler?branch=main)
+
 # Typescript Project Boiler Place
 
 This is a template for Typescript projects that require strict tsconfig, eslint, and prettier rules.
