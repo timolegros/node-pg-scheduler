@@ -8,6 +8,7 @@ export enum ExecutionMode {
 export type ExecutionModeType = keyof typeof ExecutionMode;
 export type TaskHandlerType = (data: any) => Promise<void>;
 export type TaskHandlerMapType = Record<string, TaskHandlerType>;
+
 export type StandAloneSchedulerOptions = {
   executionMode: ExecutionModeType;
   pgPoolConfig: PoolConfig;
