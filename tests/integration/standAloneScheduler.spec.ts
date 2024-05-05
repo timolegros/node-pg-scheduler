@@ -1,9 +1,11 @@
 import { StandAloneScheduler } from "../../src";
 import { ExecutionMode } from "../../src/types";
-import { expect } from "chai";
-import { Errors as TaskManagerErrors } from "../../src/abstracts/abstractTaskManager";
+import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import {clearTables, createTables, pgPoolConfig} from "./util";
 import {Pool} from "pg";
+
+chai.use(chaiAsPromised);
 
 describe("StandAloneScheduler", () => {
   const pool = new Pool(pgPoolConfig);
