@@ -1,4 +1,5 @@
 [![Coverage Status](https://coveralls.io/repos/github/timolegros/node-pg-scheduler/badge.svg?branch=main)](https://coveralls.io/github/timolegros/node-pg-scheduler?branch=main)
+![GitHub repo size](https://img.shields.io/github/repo-size/timolegros/node-pg-scheduler)
 
 # Typescript Project Boiler Place
 
