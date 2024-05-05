@@ -8,6 +8,7 @@ This is a template for Typescript projects that require strict tsconfig, eslint,
 - `eslint`: Uses the default configuration.
 - `prettier`: Uses the default configuration.
 - `tsconfig`: Uses the default configuration.
+- `test`: Users NYC and mocha to run tests and generate a test coverage report
 - Default branch: The default branch is `main`.
 
 ## Default Commands
