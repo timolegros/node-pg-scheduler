@@ -1,7 +1,7 @@
-import { StandAloneTaskManager } from "../../src/postgres/standAlone/standAloneTaskManager";
+import { StandAloneTaskManager } from "../../src/standAlone/standAloneTaskManager";
 import { Pool } from "pg";
-import { Errors } from "../../src/abstractTaskManager";
-import { StandAloneHandlerManager } from "../../src/postgres/standAlone/standAloneHandlerManager";
+import { Errors } from "../../src/abstracts/abstractTaskManager";
+import { StandAloneHandlerManager } from "../../src/standAlone/standAloneHandlerManager";
 import {notInitializedErrorMsg} from "../../src/util";
 import {clearTables, createTables, insertIntoTasks, pgPoolConfig} from "./util";
 import chai, { expect } from 'chai';
@@ -22,15 +22,25 @@ describe.only("StandAloneTaskManager", () => {
   })
 
   describe("initialization", () => {
-    it("should do nothing if already initialized", async () => {});
+    it("should do nothing if already initialized", async () => {
+      const taskManager = new StandAloneTaskManager({
+        pool,
+        clearOutdatedTasks: false,
+        maxTaskAge: 1,
+        namespace: 'test',
+      });
+      await taskManager.init();
+      await taskManager.init();
+    });
     it("should create the tasks table if it does not exist", async () => {});
     it("should set initialized to true if successfully initialized", async () => {});
+
     describe("old task cleanup", () => {
       let handlerManager: StandAloneHandlerManager;
 
       beforeEach(async () => {
         await pool.query("DELETE FROM tasks");
-        handlerManager = new StandAloneHandlerManager();
+        handlerManager = new StandAloneHandlerManager({ namespace: 'test' });
         await handlerManager.init();
       });
 
@@ -39,6 +49,7 @@ describe.only("StandAloneTaskManager", () => {
           pool,
           clearOutdatedTasks: false,
           maxTaskAge: 1,
+          namespace: 'test'
         });
 
         await pool.query(`
@@ -57,6 +68,7 @@ describe.only("StandAloneTaskManager", () => {
           pool,
           clearOutdatedTasks: true,
           maxTaskAge: 1,
+          namespace: 'test'
         });
 
         await pool.query(`
@@ -75,6 +87,7 @@ describe.only("StandAloneTaskManager", () => {
           pool,
           clearOutdatedTasks: true,
           maxTaskAge: 1,
+          namespace: 'test'
         });
 
         await insertIntoTasks({
@@ -108,7 +121,7 @@ describe.only("StandAloneTaskManager", () => {
   });
 
   describe("scheduling", () => {
-    const handlerManager = new StandAloneHandlerManager();
+    const handlerManager = new StandAloneHandlerManager({ namespace: 'test' });
     let taskManager: StandAloneTaskManager;
 
     before(async () => {
@@ -120,6 +133,7 @@ describe.only("StandAloneTaskManager", () => {
         pool,
         clearOutdatedTasks: false,
         maxTaskAge: 999999999,
+        namespace: 'test'
       });
       await taskManager.init();
     });
@@ -134,6 +148,7 @@ describe.only("StandAloneTaskManager", () => {
         pool,
         clearOutdatedTasks: false,
         maxTaskAge: 999999999,
+        namespace: 'test'
       });
       const now = new Date();
       now.setUTCDate(now.getDate() + 1);
@@ -165,7 +180,7 @@ describe.only("StandAloneTaskManager", () => {
     it("should throw if the given handler manager is not initialized", async () => {
       const now = new Date();
       now.setUTCDate(now.getDate() + 1);
-      const newHandler = new StandAloneHandlerManager();
+      const newHandler = new StandAloneHandlerManager({ namespace: 'test' });
       await expect(
         taskManager.scheduleTask({
           date: now,

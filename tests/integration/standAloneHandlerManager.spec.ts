@@ -14,7 +14,9 @@ describe("StandAloneHandlerManager", () => {
   });
 
   describe("registerTaskHandler", () => {
-    it("should fail to register a task handler if the manager is not initialized", async () => {});
+    it("should fail to register a task handler if the manager is not initialized", async () => {
+
+    });
     it("should register a task handler", async () => {});
     it("should not throw if a handler with the same name is already registered", async () => {});
   });

@@ -1,31 +1,29 @@
 import { Pool, PoolConfig } from "pg";
-import { StandAloneTaskManager } from "./postgres/standAlone/standAloneTaskManager";
-import { StandAloneHandlerManager } from "./postgres/standAlone/standAloneHandlerManager";
+import { StandAloneTaskManager } from "../standAlone/standAloneTaskManager";
+import { StandAloneHandlerManager } from "../standAlone/standAloneHandlerManager";
 import {
   ExecutionMode,
   ExecutionModeType,
-  LogLevels,
   TaskHandlerType,
   TaskType,
-} from "./types";
-import { logger } from "./logger";
-import {mustBeInitialized} from "./util";
+} from "../types";
+import { logger } from "../logger";
+import {mustBeInitialized} from "../util";
+import {Base} from "../standAlone/base";
 
 const log = logger(__filename);
 
-export abstract class AbstractScheduler {
+export abstract class AbstractScheduler extends Base {
   protected readonly executionMode: ExecutionModeType;
   protected readonly pool: Pool;
   protected abstract taskManager: StandAloneTaskManager;
   protected abstract handlerManager: StandAloneHandlerManager;
-  protected initialized = false;
 
   // realtime execution properties
   // Integer ids of tasks that are set to run with setTimeout
   protected timeoutTaskIds = new Set<number>();
   protected intervalId: ReturnType<typeof setTimeout> | undefined;
   protected readonly handleInterval: number;
-  protected readonly namespace: string;
 
   // note that the number of concurrent connections setup in the pool limits the number of
   // concurrent tasks that can be executed since each task is executed in its own transaction
@@ -35,10 +33,10 @@ export abstract class AbstractScheduler {
     executionMode: "single" | "realtime",
     namespace: string,
   ) {
+    super({ namespace });
     this.pool = new Pool(pgPoolConfig);
     this.handleInterval = handleInterval ?? 30000;
     this.executionMode = executionMode;
-    this.namespace = namespace;
   }
 
   public async start(): Promise<void> {
@@ -124,7 +122,6 @@ export abstract class AbstractScheduler {
     date: Date,
     name: string,
     data: string,
-    category?: string,
   ): Promise<void> {
     await this.taskManager.scheduleTask({
       date,

@@ -1,7 +1,7 @@
 import { StandAloneScheduler } from "../../src";
 import { ExecutionMode } from "../../src/types";
 import { expect } from "chai";
-import { Errors as TaskManagerErrors } from "../../src/abstractTaskManager";
+import { Errors as TaskManagerErrors } from "../../src/abstracts/abstractTaskManager";
 import {clearTables, createTables, pgPoolConfig} from "./util";
 import {Pool} from "pg";
 

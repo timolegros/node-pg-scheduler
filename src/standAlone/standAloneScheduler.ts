@@ -1,10 +1,10 @@
-import { AbstractScheduler } from "../../abstractScheduler";
+import { AbstractScheduler } from "../abstracts/abstractScheduler";
 import { StandAloneHandlerManager } from "./standAloneHandlerManager";
 import { StandAloneTaskManager } from "./standAloneTaskManager";
 
-import {StandAloneSchedulerOptions} from "../../types";
-import {logger} from "../../logger";
-import {mustBeInitialized} from "../../util";
+import {StandAloneSchedulerOptions} from "../types";
+import {logger} from "../logger";
+import {mustBeInitialized} from "../util";
 
 const log = logger(__filename);
 
@@ -24,11 +24,14 @@ export class StandAloneScheduler extends AbstractScheduler {
       options.namespace,
     );
 
-    this.handlerManager = new StandAloneHandlerManager();
+    this.handlerManager = new StandAloneHandlerManager({
+      namespace: options.namespace,
+    });
     this.taskManager = new StandAloneTaskManager({
       pool: this.pool,
       clearOutdatedTasks: options.clearOutdatedTasks,
       maxTaskAge: options.maxTaskAge,
+      namespace: options.namespace,
     });
   }
 
