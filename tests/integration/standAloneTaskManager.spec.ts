@@ -9,7 +9,7 @@ import chaiAsPromised from 'chai-as-promised';
 
 chai.use(chaiAsPromised);
 
-describe.only("StandAloneTaskManager", () => {
+describe("StandAloneTaskManager", () => {
   const pool = new Pool(pgPoolConfig);
 
   before(async () => {

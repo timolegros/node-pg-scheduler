@@ -7,7 +7,7 @@ import chaiAsPromised from 'chai-as-promised';
 
 chai.use(chaiAsPromised);
 
-describe.only("StandAloneHandlerManager", () => {
+describe("StandAloneHandlerManager", () => {
   const pool = new Pool(pgPoolConfig);
 
   before(async () => {
