@@ -32,7 +32,63 @@ To use Node-PG-Scheduler you must decide whether you want stand-alone usage or a
 
 Use the `StandAloneScheduler` class if you intend to have only 1 task handler per namespace.
 
-#### Configuration
+```typescript
+import {StandAloneScheduler, ExecutionMode} from "standAloneScheduler";
+
+const scheduler = new StandAloneScheduler({
+  namespace: 'test',
+  executionMode: ExecutionMode.realtime,
+  pgPoolConfig: {
+    connectionString: "postgres://username:password@localhost:5432/node_pg_scheduler",
+  }
+});
+```
+
+### Initialization
+All schedulers must be initialized:
+```typescript
+await scheduler.init();
+```
+This ensures that scheduler has an active PG connection pool and does any task clean-up if enabled.
+
+Congrats! You can now begin scheduling tasks.
+
+### Registering Task Handlers
+```typescript
+async function testHandler(data: string) {
+  return JSON.parse(date);
+}
+
+// Returns true if the handler was set or false if the handler already exists.
+// Will throw an error if the scheduler is not initialized.
+await scheduler.registerTaskHandler(
+  testHandler.name, // A unique name that matches the task handler to a task,
+  testHandler // The handler function that will handle tasks as they come to fruition
+);
+```
+
+### Scheduling Tasks
+```typescript
+// Returns the Postgres generated id of the scheduled task
+await scheduler.scheduleTask(
+  new Date('2030-04-18T09:30:30+0000'), // the Javascript Date (time) at which the task should execute
+  testHandler.name, // the shared name as defined above
+  data, // a string containing any data you want to pass to the handler. Typically this will be some JSON stringied object
+);
+```
+
+This function can throw for the
+following reasons:
+- The scheduler is not initialized.
+- The date you provided is in the past.
+- There is no registered task handler for the given task (check your name arguments).
+- The function failed to insert the task into Postgres.
+
+And that it's it! Your scheduler will poll the database every 30 seconds (unless specified) for tasks. But don't worry,
+every time it does, it sets a JS timeout (setTimeout) to execute the task handler at the right time.
+
+## Configuration
+All configuration options of the `StandAloneScheduler`
 
 | option               | description                                                                                                                                                                                                               | default |
 |----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
@@ -71,3 +127,7 @@ Use the `DistributedScheduler` class if you intend to have multiple competing ta
 ## FAQ
 
 ### My tasks aren't executing on-time. What can I do?
+
+## Roadmap
+- [ ] Add chaos tests. Test system failure scenarios and recovery ability.
+- [ ] Publish NPM package
