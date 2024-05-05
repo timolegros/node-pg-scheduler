@@ -1,3 +1,5 @@
+[![Coverage Status](https://coveralls.io/repos/github/timolegros/node-pg-scheduler/badge.svg?branch=main)](https://coveralls.io/github/timolegros/node-pg-scheduler?branch=main)
+
 # Typescript Project Boiler Place
 
 This is a template for Typescript projects that require strict tsconfig, eslint, and prettier rules.
@@ -8,6 +10,7 @@ This is a template for Typescript projects that require strict tsconfig, eslint,
 - `eslint`: Uses the default configuration.
 - `prettier`: Uses the default configuration.
 - `tsconfig`: Uses the default configuration.
+- `test`: Users NYC and mocha to run tests and generate a test coverage report
 - Default branch: The default branch is `main`.
 
 ## Default Commands
