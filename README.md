@@ -13,10 +13,8 @@ yarn add node-pg-scheduler
 
 or
 
-```typescript
-npm
-install
-node - pg - scheduler
+```shell
+npm install node-pg-scheduler
 ```
 
 ## Terminology
@@ -103,7 +101,8 @@ All configuration options of the `StandAloneScheduler`
 
 Use the `DistributedScheduler` class if you intend to have multiple competing task handlers per namespace.
 
-## Commands
+## Development
+### Commands
 
 - `build`: Compiles all Typescript files under `src/` and outputs them to `build/`.
 - `check-types`: Uses `tsc` to check all types without emitting any `.js` files.
@@ -115,7 +114,7 @@ Use the `DistributedScheduler` class if you intend to have multiple competing ta
   files before every push.
 - `test`: Runs all tests and produces a test coverage report
 
-## Configuration
+### Repo Settings
 
 - `yarn`: This project uses yarn v1. All commands should be run with yarn.
 - `eslint`: Uses the default configuration.
