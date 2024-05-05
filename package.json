@@ -21,7 +21,11 @@
       ".ts"
     ],
     "exclude": [
-      "**/*.d.ts"
+      "**/*.d.ts",
+      "**/coverage",
+      "**/.nyc_output",
+      "**/.prettierrc.js",
+      "**/tests"
     ],
     "reporter": [
       "lcov",
