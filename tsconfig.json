@@ -6,6 +6,7 @@
     "esModuleInterop": true,
     // Recommended: Compiler complains about expressions implicitly typed as 'any'
     "noImplicitAny": true,
+    "sourceMap": true,
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"],
   "exclude": [
