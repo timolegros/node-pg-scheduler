@@ -13,7 +13,20 @@
     "lint-all": "eslint './src/**/*.ts'",
     "format": "prettier --write .",
     "add-prettier-precommit": "grep -q -s 'prettier --write' ./.git/hooks/pre-commit || cat ./scripts/prettier-new-work.sh >> ./.git/hooks/pre-commit",
-    "test": "ts-mocha -p tsconfig.json ./tests/**/*.spec.ts"
+    "test": "ts-mocha -p tsconfig.json ./tests/**/*.spec.ts",
+    "test-new": "nyc npx mocha --require ts-node/register -require source-map-support/register --recursive './tests/**/*.spec.ts' --exit"
+  },
+  "nyc": {
+    "extension": [
+      ".ts"
+    ],
+    "exclude": [
+      "**/*.d.ts"
+    ],
+    "reporter": [
+      "html"
+    ],
+    "all": true
   },
   "license": "UNLICENSED",
   "devDependencies": {
@@ -29,7 +42,9 @@
     "chai-as-promised": "^7.1.1",
     "eslint": "^9.2.0",
     "globals": "^15.1.0",
+    "nyc": "^15.1.0",
     "prettier": "^3.2.5",
+    "source-map-support": "^0.5.21",
     "ts-mocha": "^10.0.0",
     "typescript": "^5.4.5",
     "typescript-eslint": "^7.8.0"
