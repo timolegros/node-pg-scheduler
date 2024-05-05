@@ -1,9 +1,10 @@
-import { AbstractScheduler } from "../abstractScheduler";
+import { AbstractScheduler } from "../../abstractScheduler";
 import { StandAloneHandlerManager } from "./standAloneHandlerManager";
 import { StandAloneTaskManager } from "./standAloneTaskManager";
 
-import {StandAloneSchedulerOptions} from "../types";
-import {logger} from "../logger";
+import {StandAloneSchedulerOptions} from "../../types";
+import {logger} from "../../logger";
+import {mustBeInitialized} from "../../util";
 
 const log = logger(__filename);
 
@@ -18,9 +19,9 @@ export class StandAloneScheduler extends AbstractScheduler {
   constructor(options: StandAloneSchedulerOptions) {
     super(
       options.pgPoolConfig,
-      options.logLevel ?? "error",
       options.handleInterval,
-      options.executionMode
+      options.executionMode,
+      options.namespace,
     );
 
     this.handlerManager = new StandAloneHandlerManager();
@@ -38,9 +39,7 @@ export class StandAloneScheduler extends AbstractScheduler {
   }
 
   protected async realtimeExecution(): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('Class is not initialized!')
-    }
+    mustBeInitialized(this.initialized, this.constructor.name);
 
     log.trace("realtimeExecution(): Starting realtime execution");
     const tasks = await this.taskManager.getTasks({
@@ -78,7 +77,9 @@ export class StandAloneScheduler extends AbstractScheduler {
         log.debug(`Executing task ${task.id} immediately`);
         // safety check to catch any hanging task ids that result from a timeout being cancelled
         this.timeoutTaskIds.delete(task.id);
-        this.executeTask(task, handlers[task.name]);
+        this.executeTask(task, handlers[task.name]).catch((err) => {
+          log.error(`Failed to execute task ${task.id}`, err);
+        });
       }
     }
     log.trace("realtimeExecution(): Finished realtime execution");

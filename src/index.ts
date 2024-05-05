@@ -1,1 +1,1 @@
-export { StandAloneScheduler } from "./standAlone/standAloneScheduler";
+export { StandAloneScheduler } from "./postgres/standAlone/standAloneScheduler";

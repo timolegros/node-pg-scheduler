@@ -1,4 +1,18 @@
+import {Pool} from "pg";
+import {clearTables, createTables, pgPoolConfig} from "./util";
+
 describe("StandAloneHandlerManager", () => {
+  const pool = new Pool(pgPoolConfig);
+
+  before(async () => {
+    await createTables();
+  });
+
+  after(async () => {
+    await clearTables();
+    await pool.end();
+  });
+
   describe("registerTaskHandler", () => {
     it("should fail to register a task handler if the manager is not initialized", async () => {});
     it("should register a task handler", async () => {});

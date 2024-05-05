@@ -1,30 +1,35 @@
-import { StandAloneTaskManager } from "../../src/standAlone/standAloneTaskManager";
+import { StandAloneTaskManager } from "../../src/postgres/standAlone/standAloneTaskManager";
 import { Pool } from "pg";
-import { expect } from "chai";
 import { Errors } from "../../src/abstractTaskManager";
-import { StandAloneHandlerManager } from "../../src/standAlone/standAloneHandlerManager";
-import {notInitializedError} from "../../src/util";
-import {createTasksTable} from "../../src/queries";
+import { StandAloneHandlerManager } from "../../src/postgres/standAlone/standAloneHandlerManager";
+import {notInitializedErrorMsg} from "../../src/util";
+import {clearTables, createTables, insertIntoTasks, pgPoolConfig} from "./util";
+import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 
-describe("StandAloneTaskManager", () => {
-  // TODO: connection string
-  const pool = new Pool();
+chai.use(chaiAsPromised);
+
+describe.only("StandAloneTaskManager", () => {
+  const pool = new Pool(pgPoolConfig);
+
   before(async () => {
-    await pool.query(createTasksTable);
+    await createTables();
   });
 
+  after(async () => {
+    await clearTables();
+    await pool.end();
+  })
+
   describe("initialization", () => {
-    it('should do nothing if already initialized', async () => {});
-    it('should create the tasks table if it does not exist', async () => {});
-    it('should set initialized to true if successfully initialized', async () => {});
+    it("should do nothing if already initialized", async () => {});
+    it("should create the tasks table if it does not exist", async () => {});
+    it("should set initialized to true if successfully initialized", async () => {});
     describe("old task cleanup", () => {
       let handlerManager: StandAloneHandlerManager;
 
       beforeEach(async () => {
         await pool.query("DELETE FROM tasks");
-      });
-
-      beforeEach(async () => {
         handlerManager = new StandAloneHandlerManager();
         await handlerManager.init();
       });
@@ -37,9 +42,9 @@ describe("StandAloneTaskManager", () => {
         });
 
         await pool.query(`
-        INSERT INTO tasks (date, name, data)
-        VALUES ((CURRENT_TIMESTAMP - (1 * INTERVAL 'month')), 'test', '{}');
-      `);
+            INSERT INTO tasks (date, name, data, namespace)
+            VALUES ((CURRENT_TIMESTAMP - INTERVAL '1 month'), 'test', '{}', 'test');
+        `);
 
         await taskManager.init();
 
@@ -47,7 +52,7 @@ describe("StandAloneTaskManager", () => {
         expect(result.rows.length).to.equal(1);
       });
 
-      it('should not remove tasks younger than maxTaskAge', async () => {
+      it("should not remove tasks younger than maxTaskAge", async () => {
         const taskManager = new StandAloneTaskManager({
           pool,
           clearOutdatedTasks: true,
@@ -55,9 +60,9 @@ describe("StandAloneTaskManager", () => {
         });
 
         await pool.query(`
-        INSERT INTO tasks (date, name, data)
-        VALUES ((CURRENT_TIMESTAMP + (1 * INTERVAL 'day')), 'test', '{}');
-      `);
+            INSERT INTO tasks (date, name, data, namespace)
+            VALUES ((CURRENT_TIMESTAMP + INTERVAL '1 day'), 'test', '{}', 'test');
+        `);
 
         await taskManager.init();
 
@@ -65,25 +70,34 @@ describe("StandAloneTaskManager", () => {
         expect(result.rows.length).to.equal(1);
       });
 
-      it('should remove tasks older than maxTaskAge', async () => {
+      it("should remove tasks older than maxTaskAge", async () => {
         const taskManager = new StandAloneTaskManager({
           pool,
           clearOutdatedTasks: true,
           maxTaskAge: 1,
         });
 
-        await pool.query(`
-        INSERT INTO tasks (date, name, data)
-        VALUES ((CURRENT_TIMESTAMP - (1 * INTERVAL 'day')), 'test', '{}');
-      `);
-        await pool.query(`
-        INSERT INTO tasks (date, name, data)
-        VALUES ((CURRENT_TIMESTAMP - (1 * INTERVAL 'day')), 'test2', '{}');
-      `);
-        await pool.query(`
-        INSERT INTO tasks (date, name, data)
-        VALUES ((CURRENT_TIMESTAMP + (1 * INTERVAL 'day')), 'test2', '{}');
-      `);
+        await insertIntoTasks({
+          pool,
+          date: { interval: "day", amount: 1, pos: "-" },
+          name: "test",
+          data: "{}",
+          namespace: "test",
+        });
+        await insertIntoTasks({
+          pool,
+          date: { interval: "day", amount: 1, pos: "-" },
+          name: "test2",
+          data: "{}",
+          namespace: "test",
+        });
+        await insertIntoTasks({
+          pool,
+          date: { interval: "day", amount: 1, pos: "+" },
+          name: "test2",
+          data: "{}",
+          namespace: "test",
+        });
 
         await taskManager.init();
 
@@ -124,39 +138,56 @@ describe("StandAloneTaskManager", () => {
       const now = new Date();
       now.setUTCDate(now.getDate() + 1);
       await expect(
-        noInitTaskManager.scheduleTask(now, "test", "{}", null, handlerManager)
-      ).to.be.rejectedWith(notInitializedError('scheduleTask'));
+        noInitTaskManager.scheduleTask({
+          date: now,
+          name: "test",
+          data: "{}",
+          namespace: "test",
+          handlerManager,
+        }),
+      ).to.be.rejectedWith(notInitializedErrorMsg(noInitTaskManager.constructor.name));
     });
 
     it("should fail to schedule a task with a date in the past", async () => {
       const now = new Date();
       now.setUTCDate(now.getDate() - 1);
       await expect(
-        taskManager.scheduleTask(now, "test", "{}", null, handlerManager)
+        taskManager.scheduleTask({
+          date: now,
+          name: "test",
+          data: "{}",
+          namespace: "test",
+          handlerManager,
+        }),
       ).to.be.rejectedWith(Errors.INVALID_DATE);
     });
 
     it("should throw if the given handler manager is not initialized", async () => {
       const now = new Date();
       now.setUTCDate(now.getDate() + 1);
+      const newHandler = new StandAloneHandlerManager();
       await expect(
-        taskManager.scheduleTask(
-          now,
-          "test",
-          "{}",
-          null,
-          new StandAloneHandlerManager()
-        )
-      ).to.be.rejectedWith(
-        notInitializedError('getTaskHandlers')
-      );
+        taskManager.scheduleTask({
+          date: now,
+          name: "test",
+          data: "{}",
+          namespace: "test",
+          handlerManager: newHandler
+        }),
+      ).to.be.rejectedWith(notInitializedErrorMsg(newHandler.constructor.name));
     });
 
     it("should fail to schedule a task with no handler registered", async () => {
       const now = new Date();
       now.setUTCDate(now.getDate() + 1);
       await expect(
-        taskManager.scheduleTask(now, "test", "{}", null, handlerManager)
+        taskManager.scheduleTask({
+          date: now,
+          name: "test",
+          data: "{}",
+          namespace: "test",
+          handlerManager,
+        }),
       ).to.be.rejectedWith(Errors.NO_REGISTERED_HANDLER("test"));
     });
 
@@ -165,42 +196,41 @@ describe("StandAloneTaskManager", () => {
         "test",
         async () => {
           return;
-        }
+        },
       );
       expect(registration).to.be.true;
 
       const now = new Date();
       now.setUTCDate(now.getDate() + 1);
       await expect(
-        taskManager.scheduleTask(
-          now,
-          "a".repeat(256),
-          "{}",
-          null,
-          handlerManager
-        )
+        taskManager.scheduleTask({
+          date: now,
+          name: "a".repeat(256),
+          data: "{}",
+          namespace: "test",
+          handlerManager,
+        }),
       ).to.be.rejected;
     });
 
-    it("should fail to schedule a task with a category longer than 255 characters", async () => {
+    it("should fail to schedule a task without a namespace", async () => {
       const registration = await handlerManager.registerTaskHandler(
         "test",
         async () => {
           return;
-        }
+        },
       );
       expect(registration).to.be.true;
 
       const now = new Date();
       now.setUTCDate(now.getDate() + 1);
       await expect(
-        taskManager.scheduleTask(
-          now,
-          "test",
-          "{}",
-          "a".repeat(256),
-          handlerManager
-        )
+        taskManager.scheduleTask({
+          date: now,
+          name: "test",
+          data: "{}",
+          handlerManager,
+        } as any),
       ).to.be.rejected;
     });
 
@@ -209,54 +239,54 @@ describe("StandAloneTaskManager", () => {
         "test",
         async () => {
           return;
-        }
+        },
       );
       expect(registration).to.be.true;
 
       const now = new Date();
       now.setUTCDate(now.getDate() + 1);
-      const taskId = await taskManager.scheduleTask(
-        now,
-        "test",
-        "{}",
-        null,
-        handlerManager
-      );
-      expect(taskId).to.equal(1);
+      const taskId = await taskManager.scheduleTask({
+        date: now,
+        name: "test",
+        data: "{}",
+        namespace: "test",
+        handlerManager,
+      });
+      expect(taskId).to.exist;
 
       const result = await pool.query("SELECT * FROM tasks");
       expect(result.rows.length).to.equal(1);
       expect(result.rows[0]).to.deep.equal({
-        id: 1,
+        id: taskId,
         date: now,
         name: "test",
         data: "{}",
-        category: null,
+        namespace: "test"
       });
     });
   });
 
   describe("getTasks", () => {
-    it('should fail if the task manager is not initialized', async () => {});
-    it('should return all tasks if no options are given', async () => {});
-    it('should return a task with the given id', async () => {});
-    it('should return tasks with the given name', async () => {});
-    it('should return tasks with the given category', async () => {});
-    it('should return tasks that don\'t have the given id', async () => {});
+    it("should fail if the task manager is not initialized", async () => {});
+    it("should return all tasks if no options are given", async () => {});
+    it("should return a task with the given id", async () => {});
+    it("should return tasks with the given name", async () => {});
+    it("should return tasks with the given category", async () => {});
+    it("should return tasks that don't have the given id", async () => {});
   });
 
   describe("removeTask", () => {
-    it('should fail if the task manager is not initialized', async () => {});
-    it('should remove a task with the given id', async () => {});
-    it('should remove tasks with the given name', async () => {});
-    it('should remove tasks with the given category', async () => {});
-    it('should remove tasks that don\'t have the given id', async () => {});
+    it("should fail if the task manager is not initialized", async () => {});
+    it("should remove a task with the given id", async () => {});
+    it("should remove tasks with the given name", async () => {});
+    it("should remove tasks with the given category", async () => {});
+    it("should remove tasks that don't have the given id", async () => {});
   });
 
   describe("getExecutableTasks", () => {
-    it('should fail if the task manager is not initialized', async () => {});
-    it('should return no tasks if no tasks are ready to be executed', async () => {});
-    it('should return tasks that are ready to be executed', async () => {});
-    it('should not return tasks that are locked', async () => {});
+    it("should fail if the task manager is not initialized", async () => {});
+    it("should return no tasks if no tasks are ready to be executed", async () => {});
+    it("should return tasks that are ready to be executed", async () => {});
+    it("should not return tasks that are locked", async () => {});
   });
 });

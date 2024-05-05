@@ -13,9 +13,7 @@
     "lint-all": "eslint './src/**/*.ts'",
     "format": "prettier --write .",
     "add-prettier-precommit": "grep -q -s 'prettier --write' ./.git/hooks/pre-commit || cat ./scripts/prettier-new-work.sh >> ./.git/hooks/pre-commit",
-    "test": "ts-mocha -p tsconfig.json ./src/**/*.spec.ts",
-    "test-integration": "ts-mocha -p tsconfig.json ./src/**/*.integration.ts",
-    "test-unit": "ts-mocha -p tsconfig.json ./src/**/*.unit.ts"
+    "test": "ts-mocha -p tsconfig.json ./tests/**/*.spec.ts"
   },
   "license": "UNLICENSED",
   "devDependencies": {
@@ -38,6 +36,7 @@
   },
   "dependencies": {
     "eslint-config-prettier": "^9.1.0",
+    "mocha": "^10.4.0",
     "pg": "^8.11.3",
     "pino": "8.19",
     "pino-pretty": "^11.0.0"

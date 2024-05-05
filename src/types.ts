@@ -13,7 +13,7 @@ export type TaskHandlerMapType = Record<string, TaskHandlerType>;
 export type StandAloneSchedulerOptions = {
   executionMode: ExecutionModeType;
   pgPoolConfig: PoolConfig;
-  logLevel?: LogLevels;
+  namespace: string;
   clearOutdatedTasks?: boolean;
   maxTaskAge?: number;
   handleInterval?: number;
@@ -39,6 +39,6 @@ type AllTaskQueryOptions = {
   id: number;
   notIds: number[];
   name: string;
-  category: string;
+  namespace: string;
 };
 export type TaskQueryOptions = AtLeastOne<AllTaskQueryOptions>;

@@ -3,8 +3,8 @@ import { StandAloneScheduler } from "../../src";
 
 async function main() {
   const scheduler = new StandAloneScheduler({
+    namespace: 'test',
     executionMode: ExecutionMode.single,
-    logLevel: "trace",
     pgPoolConfig: {
       connectionString:
         "postgres://scheduler:scheduler_pswd@localhost:5432/node_pg_scheduler",

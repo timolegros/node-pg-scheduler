@@ -1,5 +1,6 @@
-import {AbstractHandlerManager} from "../abstractHandlerManager";
-import {TaskHandlerMapType, TaskHandlerType} from "../types";
+import {AbstractHandlerManager} from "../../abstractHandlerManager";
+import {TaskHandlerMapType, TaskHandlerType} from "../../types";
+import {mustBeInitialized} from "../../util";
 
 export class StandAloneHandlerManager extends AbstractHandlerManager {
   constructor() {
@@ -17,9 +18,7 @@ export class StandAloneHandlerManager extends AbstractHandlerManager {
     name: string,
     handler: TaskHandlerType
   ): Promise<boolean> {
-    if (!this.initialized) {
-      throw new Error('Class is not initialized!')
-    }
+    mustBeInitialized(this.initialized, this.constructor.name);
 
     if (this.taskHandlers[name]) {
       return false;
@@ -29,9 +28,7 @@ export class StandAloneHandlerManager extends AbstractHandlerManager {
   }
 
   public async removeTaskHandler(name: string): Promise<boolean> {
-    if (!this.initialized) {
-      throw new Error('Class is not initialized!')
-    }
+    mustBeInitialized(this.initialized, this.constructor.name);
 
     if (!this.taskHandlers[name]) {
       return false;
@@ -41,9 +38,7 @@ export class StandAloneHandlerManager extends AbstractHandlerManager {
   }
 
   public getTaskHandlers(): TaskHandlerMapType {
-    if (!this.initialized) {
-      throw new Error('Class is not initialized!')
-    }
+    mustBeInitialized(this.initialized, this.constructor.name);
 
     return this.taskHandlers;
   }

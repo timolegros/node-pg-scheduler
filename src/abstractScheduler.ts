@@ -1,6 +1,6 @@
 import { Pool, PoolConfig } from "pg";
-import { StandAloneTaskManager } from "./standAlone/standAloneTaskManager";
-import { StandAloneHandlerManager } from "./standAlone/standAloneHandlerManager";
+import { StandAloneTaskManager } from "./postgres/standAlone/standAloneTaskManager";
+import { StandAloneHandlerManager } from "./postgres/standAlone/standAloneHandlerManager";
 import {
   ExecutionMode,
   ExecutionModeType,
@@ -9,6 +9,7 @@ import {
   TaskType,
 } from "./types";
 import { logger } from "./logger";
+import {mustBeInitialized} from "./util";
 
 const log = logger(__filename);
 
@@ -24,24 +25,24 @@ export abstract class AbstractScheduler {
   protected timeoutTaskIds = new Set<number>();
   protected intervalId: ReturnType<typeof setTimeout> | undefined;
   protected readonly handleInterval: number;
+  protected readonly namespace: string;
 
   // note that the number of concurrent connections setup in the pool limits the number of
   // concurrent tasks that can be executed since each task is executed in its own transaction
   protected constructor(
     pgPoolConfig: PoolConfig,
-    logLevel: LogLevels,
     handleInterval: number | undefined,
     executionMode: "single" | "realtime",
+    namespace: string,
   ) {
     this.pool = new Pool(pgPoolConfig);
     this.handleInterval = handleInterval ?? 30000;
     this.executionMode = executionMode;
+    this.namespace = namespace;
   }
 
   public async start(): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('Class is not initialized!')
-    }
+    mustBeInitialized(this.initialized, this.constructor.name);
     if (this.executionMode === ExecutionMode.single) {
       await this.singleExecution();
     } else {
@@ -53,9 +54,7 @@ export abstract class AbstractScheduler {
     task: TaskType,
     handler: TaskHandlerType,
   ): Promise<boolean> {
-    if (!this.initialized) {
-      throw new Error('Class is not initialized!')
-    }
+    mustBeInitialized(this.initialized, this.constructor.name);
     const client = await this.pool.connect();
     log.trace(`executeTask(): Executing task ${task.id}`);
     await client.query("BEGIN;");
@@ -111,9 +110,7 @@ export abstract class AbstractScheduler {
   }
 
   protected async startRealtimeExecution(): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('Class is not initialized!')
-    }
+    mustBeInitialized(this.initialized, this.constructor.name);
 
     log.trace("startRealtimeExecution(): Starting realtime execution");
     await this.realtimeExecution();
@@ -129,13 +126,13 @@ export abstract class AbstractScheduler {
     data: string,
     category?: string,
   ): Promise<void> {
-    await this.taskManager.scheduleTask(
+    await this.taskManager.scheduleTask({
       date,
       name,
       data,
-      category ?? null,
-      this.handlerManager,
-    );
+      namespace: this.namespace,
+      handlerManager: this.handlerManager,
+    });
   }
 
   public async registerTaskHandler(
@@ -148,9 +145,7 @@ export abstract class AbstractScheduler {
   protected abstract realtimeExecution(): Promise<void>;
 
   public async destroy(): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('Class is not initialized!')
-    }
+    mustBeInitialized(this.initialized, this.constructor.name);
 
     this.initialized = false;
     await this.pool.end();

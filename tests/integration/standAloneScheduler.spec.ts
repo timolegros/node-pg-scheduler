@@ -2,16 +2,25 @@ import { StandAloneScheduler } from "../../src";
 import { ExecutionMode } from "../../src/types";
 import { expect } from "chai";
 import { Errors as TaskManagerErrors } from "../../src/abstractTaskManager";
-
-const pgPoolConfig = {
-  connectionString:
-    "postgres://scheduler:scheduler_pswd@localhost:5432/node_pg_scheduler",
-};
+import {clearTables, createTables, pgPoolConfig} from "./util";
+import {Pool} from "pg";
 
 describe("StandAloneScheduler", () => {
+  const pool = new Pool(pgPoolConfig);
+
+  before(async () => {
+    await createTables();
+  });
+
+  after(async () => {
+    await clearTables();
+    await pool.end();
+  });
+
   describe("Single Execution", () => {
     it("should initialize the scheduler", async () => {
       const scheduler = new StandAloneScheduler({
+        namespace: 'test',
         executionMode: ExecutionMode.single,
         pgPoolConfig,
       });
