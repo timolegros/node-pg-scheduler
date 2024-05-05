@@ -1,26 +1,28 @@
-import log from "loglevel";
 import { Pool, PoolConfig } from "pg";
-import { StandAloneTaskManager } from "../task/standAloneTaskManager";
-import { StandAloneHandlerManager } from "../handler/standAloneHandlerManager";
-import { ExecutionMode, ExecutionModeType, LogLevels } from "../types";
-import { CheckInitialized } from "../util";
-import { TaskType } from "../task/types";
-import { TaskHandlerType } from "../handler/types";
-import { DistributedHandlerManager } from "../handler/distributedHandlerManager";
+import { StandAloneTaskManager } from "./standAlone/standAloneTaskManager";
+import { StandAloneHandlerManager } from "./standAlone/standAloneHandlerManager";
+import {
+  ExecutionMode,
+  ExecutionModeType,
+  LogLevels,
+  TaskHandlerType,
+  TaskType,
+} from "./types";
+import { logger } from "./logger";
+
+const log = logger(__filename);
 
 export abstract class AbstractScheduler {
   protected readonly executionMode: ExecutionModeType;
   protected readonly pool: Pool;
   protected abstract taskManager: StandAloneTaskManager;
-  protected abstract handlerManager:
-    | StandAloneHandlerManager
-    | DistributedHandlerManager;
+  protected abstract handlerManager: StandAloneHandlerManager;
   protected initialized = false;
 
   // realtime execution properties
   // Integer ids of tasks that are set to run with setTimeout
   protected timeoutTaskIds = new Set<number>();
-  protected intervalId: NodeJS.Timeout | undefined;
+  protected intervalId: ReturnType<typeof setTimeout> | undefined;
   protected readonly handleInterval: number;
 
   // note that the number of concurrent connections setup in the pool limits the number of
@@ -29,16 +31,17 @@ export abstract class AbstractScheduler {
     pgPoolConfig: PoolConfig,
     logLevel: LogLevels,
     handleInterval: number | undefined,
-    executionMode: "single" | "realtime"
+    executionMode: "single" | "realtime",
   ) {
-    log.setLevel(logLevel ?? "error", false);
     this.pool = new Pool(pgPoolConfig);
     this.handleInterval = handleInterval ?? 30000;
     this.executionMode = executionMode;
   }
 
-  @CheckInitialized
   public async start(): Promise<void> {
+    if (!this.initialized) {
+      throw new Error('Class is not initialized!')
+    }
     if (this.executionMode === ExecutionMode.single) {
       await this.singleExecution();
     } else {
@@ -46,21 +49,24 @@ export abstract class AbstractScheduler {
     }
   }
 
-  @CheckInitialized
   protected async executeTask(
     task: TaskType,
-    handler: TaskHandlerType
+    handler: TaskHandlerType,
   ): Promise<boolean> {
+    if (!this.initialized) {
+      throw new Error('Class is not initialized!')
+    }
     const client = await this.pool.connect();
     log.trace(`executeTask(): Executing task ${task.id}`);
     await client.query("BEGIN;");
     const result = await client.query(
       `
-      SELECT * FROM tasks
-      WHERE id = $1
-      FOR UPDATE SKIP LOCKED;
-    `,
-      [task.id]
+          SELECT *
+          FROM tasks
+          WHERE id = $1
+              FOR UPDATE SKIP LOCKED;
+      `,
+      [task.id],
     );
 
     if (result.rows.length !== 1) {
@@ -104,8 +110,11 @@ export abstract class AbstractScheduler {
     return executableTasks;
   }
 
-  @CheckInitialized
   protected async startRealtimeExecution(): Promise<void> {
+    if (!this.initialized) {
+      throw new Error('Class is not initialized!')
+    }
+
     log.trace("startRealtimeExecution(): Starting realtime execution");
     await this.realtimeExecution();
     this.intervalId = setInterval(async () => {
@@ -118,28 +127,31 @@ export abstract class AbstractScheduler {
     date: Date,
     name: string,
     data: string,
-    category?: string
+    category?: string,
   ): Promise<void> {
     await this.taskManager.scheduleTask(
       date,
       name,
       data,
       category ?? null,
-      this.handlerManager
+      this.handlerManager,
     );
   }
 
   public async registerTaskHandler(
     name: string,
-    handler: TaskHandlerType
+    handler: TaskHandlerType,
   ): Promise<boolean> {
     return await this.handlerManager.registerTaskHandler(name, handler);
   }
 
   protected abstract realtimeExecution(): Promise<void>;
 
-  @CheckInitialized
   public async destroy(): Promise<void> {
+    if (!this.initialized) {
+      throw new Error('Class is not initialized!')
+    }
+
     this.initialized = false;
     await this.pool.end();
 

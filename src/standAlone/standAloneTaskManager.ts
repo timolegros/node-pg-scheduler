@@ -1,7 +1,8 @@
-import { CheckInitialized } from "../util";
-import { TaskManagerOptions, TaskType } from "./types";
-import { AbstractTaskManager } from "./abstractTaskManager";
-import log from "loglevel";
+import { AbstractTaskManager } from "../abstractTaskManager";
+import {TaskManagerOptions, TaskType} from "../types";
+import {logger} from "../logger";
+
+const log = logger(__filename);
 
 export class StandAloneTaskManager extends AbstractTaskManager {
   constructor(options: TaskManagerOptions) {
@@ -13,8 +14,11 @@ export class StandAloneTaskManager extends AbstractTaskManager {
    * database by another transaction.WARNING: this function only selects tasks that haven't been locked but does not
    * lock the tasks it selects.
    */
-  @CheckInitialized
   public async getExecutableTasks(): Promise<TaskType[]> {
+    if (!this.initialized) {
+      throw new Error('Class is not initialized!')
+    }
+
     log.trace("Getting executable tasks");
     const result = await this.pool.query<TaskType>(
       `

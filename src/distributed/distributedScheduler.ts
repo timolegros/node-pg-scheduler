@@ -1,12 +1,14 @@
-import { AbstractScheduler } from "./abstractScheduler";
-import { DistributedSchedulerOptions } from "./types";
-import { DistributedHandlerManager } from "../handler/distributedHandlerManager";
-import log from "loglevel";
+import { AbstractScheduler } from "../abstractScheduler";
+import { logger } from "../logger";
 import { createSchedulerTable } from "../queries";
+
+const log = logger(__filename);
+
+import {DistributedSchedulerOptions} from "../types";
 
 export class DistributedScheduler extends AbstractScheduler {
   protected taskManager: any;
-  protected handlerManager: DistributedHandlerManager;
+  protected handlerManager: any
 
   private readonly pingInterval: number;
   private pingIntervalId: NodeJS.Timeout | undefined;
@@ -21,12 +23,14 @@ export class DistributedScheduler extends AbstractScheduler {
     );
 
     this.pingInterval = options.pingInterval || 10000;
-    this.handlerManager = new DistributedHandlerManager();
+    this.handlerManager = 1;
     this.taskManager = {};
   }
 
   public async init() {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     await this.handlerManager.init();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     await this.taskManager.init();
     this.initialized = true;
 

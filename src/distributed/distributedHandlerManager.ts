@@ -34,12 +34,3 @@
 //   @CheckInitialized
 //   public async getTaskHandlers() {}
 // }
-
-import { AbstractHandlerManager } from "./types";
-
-// @ts-ignore
-export class DistributedHandlerManager extends AbstractHandlerManager {
-  constructor() {
-    super();
-  }
-}

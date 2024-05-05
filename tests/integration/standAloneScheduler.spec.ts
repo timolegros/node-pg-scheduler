@@ -1,7 +1,7 @@
 import { StandAloneScheduler } from "../../src";
 import { ExecutionMode } from "../../src/types";
 import { expect } from "chai";
-import { Errors as TaskManagerErrors } from "../../src/task/abstractTaskManager";
+import { Errors as TaskManagerErrors } from "../../src/abstractTaskManager";
 
 const pgPoolConfig = {
   connectionString:

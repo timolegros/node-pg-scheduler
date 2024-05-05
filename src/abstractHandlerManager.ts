@@ -1,7 +1,6 @@
 import { Pool } from "pg";
 
-export type TaskHandlerType = (data: any) => Promise<void>;
-export type TaskHandlerMapType = Record<string, TaskHandlerType>;
+import {TaskHandlerMapType, TaskHandlerType} from "./types";
 
 export abstract class AbstractHandlerManager {
   protected taskHandlers: TaskHandlerMapType;

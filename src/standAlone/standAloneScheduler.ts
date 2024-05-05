@@ -1,9 +1,11 @@
-import { AbstractScheduler } from "./abstractScheduler";
-import { StandAloneHandlerManager } from "../handler/standAloneHandlerManager";
-import { StandAloneTaskManager } from "../task/standAloneTaskManager";
-import log from "loglevel";
-import { StandAloneSchedulerOptions } from "./types";
-import { CheckInitialized } from "../util";
+import { AbstractScheduler } from "../abstractScheduler";
+import { StandAloneHandlerManager } from "./standAloneHandlerManager";
+import { StandAloneTaskManager } from "./standAloneTaskManager";
+
+import {StandAloneSchedulerOptions} from "../types";
+import {logger} from "../logger";
+
+const log = logger(__filename);
 
 // TODO: REQUIRE A NAME FOR EACH SCHEDULER SO TASKS FROM DIFFERENT STAND ALONE SCHEDULERS
 //  DON'T INTERFERE WITH EACH OTHER --- duplicate naming should be a user worry
@@ -35,8 +37,11 @@ export class StandAloneScheduler extends AbstractScheduler {
     this.initialized = true;
   }
 
-  @CheckInitialized
   protected async realtimeExecution(): Promise<void> {
+    if (!this.initialized) {
+      throw new Error('Class is not initialized!')
+    }
+
     log.trace("realtimeExecution(): Starting realtime execution");
     const tasks = await this.taskManager.getTasks({
       notIds: Array.from(this.timeoutTaskIds),

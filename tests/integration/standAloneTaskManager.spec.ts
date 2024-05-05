@@ -1,8 +1,8 @@
-import { StandAloneTaskManager } from "../../src/task/standAloneTaskManager";
+import { StandAloneTaskManager } from "../../src/standAlone/standAloneTaskManager";
 import { Pool } from "pg";
 import { expect } from "chai";
-import { Errors } from "../../src/task/abstractTaskManager";
-import { StandAloneHandlerManager } from "../../src/handler/standAloneHandlerManager";
+import { Errors } from "../../src/abstractTaskManager";
+import { StandAloneHandlerManager } from "../../src/standAlone/standAloneHandlerManager";
 import {notInitializedError} from "../../src/util";
 import {createTasksTable} from "../../src/queries";
 

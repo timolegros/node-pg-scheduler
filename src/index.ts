@@ -1,1 +1,1 @@
-export { StandAloneScheduler } from "./scheduler/standAloneScheduler";
+export { StandAloneScheduler } from "./standAlone/standAloneScheduler";

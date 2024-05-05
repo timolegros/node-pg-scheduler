@@ -1,9 +1,5 @@
-import {
-  AbstractHandlerManager,
-  TaskHandlerMapType,
-  TaskHandlerType,
-} from "./types";
-import { CheckInitialized } from "../util";
+import {AbstractHandlerManager} from "../abstractHandlerManager";
+import {TaskHandlerMapType, TaskHandlerType} from "../types";
 
 export class StandAloneHandlerManager extends AbstractHandlerManager {
   constructor() {
@@ -17,11 +13,14 @@ export class StandAloneHandlerManager extends AbstractHandlerManager {
 
   // TODO: add generalized handler callback?
   // Class instances should only fetch tasks for which they have a registered handler
-  @CheckInitialized
   public async registerTaskHandler(
     name: string,
     handler: TaskHandlerType
   ): Promise<boolean> {
+    if (!this.initialized) {
+      throw new Error('Class is not initialized!')
+    }
+
     if (this.taskHandlers[name]) {
       return false;
     }
@@ -29,8 +28,11 @@ export class StandAloneHandlerManager extends AbstractHandlerManager {
     return true;
   }
 
-  @CheckInitialized
   public async removeTaskHandler(name: string): Promise<boolean> {
+    if (!this.initialized) {
+      throw new Error('Class is not initialized!')
+    }
+
     if (!this.taskHandlers[name]) {
       return false;
     }
@@ -38,8 +40,11 @@ export class StandAloneHandlerManager extends AbstractHandlerManager {
     return true;
   }
 
-  @CheckInitialized
   public getTaskHandlers(): TaskHandlerMapType {
+    if (!this.initialized) {
+      throw new Error('Class is not initialized!')
+    }
+
     return this.taskHandlers;
   }
 }

@@ -19,25 +19,27 @@
   },
   "license": "UNLICENSED",
   "devDependencies": {
+    "@eslint/js": "^9.2.0",
     "@types/chai": "^4.3.6",
     "@types/chai-as-promised": "^7.1.6",
     "@types/mocha": "^10.0.1",
     "@types/node": "^14.11.2",
     "@types/pg": "^8.10.2",
-    "@typescript-eslint/eslint-plugin": "^5.60.1",
-    "@typescript-eslint/parser": "^5.60.1",
+    "@typescript-eslint/eslint-plugin": "^7.8.0",
+    "@typescript-eslint/parser": "^7.8.0",
     "chai": "^4.3.8",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^8.44.0",
-    "eslint-config-prettier": "^8.8.0",
-    "prettier": "^2.8.8",
+    "eslint": "^9.2.0",
+    "globals": "^15.1.0",
+    "prettier": "^3.2.5",
     "ts-mocha": "^10.0.0",
-    "ts-node": "^10.9.1",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^7.8.0"
   },
   "dependencies": {
-    "loglevel": "^1.8.1",
-    "pg": "^8.11.3"
+    "eslint-config-prettier": "^9.1.0",
+    "pg": "^8.11.3",
+    "pino": "8.19",
+    "pino-pretty": "^11.0.0"
   }
 }

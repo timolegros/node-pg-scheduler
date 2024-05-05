@@ -1,9 +1,10 @@
-import { CheckInitialized } from "../util";
 import { Pool } from "pg";
-import { createTasksTable } from "../queries";
-import { TaskManagerOptions, TaskQueryOptions, TaskType } from "./types";
-import { AbstractHandlerManager } from "../handler/types";
-import log from "loglevel";
+import { createTasksTable } from "./queries";
+import {AbstractHandlerManager} from "./abstractHandlerManager";
+import {TaskManagerOptions, TaskQueryOptions, TaskType} from "./types";
+import {logger} from "./logger";
+
+const log = logger(__filename);
 
 export const Errors = {
   INVALID_DATE: "Date must be in the future",
@@ -55,7 +56,6 @@ export abstract class AbstractTaskManager {
    * @param handlerManager
    * @returns {Promise<number>} The integer id of the task inserted into the database.
    */
-  @CheckInitialized
   public async scheduleTask(
     date: Date,
     name: string,
@@ -63,6 +63,10 @@ export abstract class AbstractTaskManager {
     category: string | null = null,
     handlerManager: AbstractHandlerManager
   ): Promise<number> {
+    if (!this.initialized) {
+      throw new Error('Class is not initialized!')
+    }
+
     if (date.getTime() <= Date.now()) {
       throw new Error(Errors.INVALID_DATE);
     }
@@ -96,8 +100,10 @@ export abstract class AbstractTaskManager {
     }
   }
 
-  @CheckInitialized
   public async removeTasks(options: TaskQueryOptions) {
+    if (!this.initialized) {
+      throw new Error('Class is not initialized!')
+    }
     const filters = this.buildTaskFilterQuery(options);
     const result = await this.pool.query(
       `
@@ -114,8 +120,10 @@ export abstract class AbstractTaskManager {
    * Get all tasks with the given options.
    * @param options An options object that can contain an id, name, or category.
    */
-  @CheckInitialized
   public async getTasks(options?: TaskQueryOptions): Promise<TaskType[]> {
+    if (!this.initialized) {
+      throw new Error('Class is not initialized!')
+    }
     if (!options) {
       const { rows } = await this.pool.query(`
         SELECT * FROM tasks;
@@ -148,8 +156,11 @@ export abstract class AbstractTaskManager {
   // Used to clean up tasks that were never picked up by a task handler.
   // This will only occur if a tasks execution time passes while there is no registered task handler.
   // By default, this will execute automatically when the scheduler is instantiated.
-  @CheckInitialized
   public async clearOldTasks() {
+    if (!this.initialized) {
+      throw new Error('Class is not initialized!')
+    }
+
     try {
       const result = await this.pool.query(
         `

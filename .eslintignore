@@ -3,4 +3,4 @@ scripts/
 node_modules/
 docker/
 .git/
-.eslintrc.js
+.eslintrc
