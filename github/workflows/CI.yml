@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches:
+      - master
+
+jobs:
+  tests:
+    strategy:
+      matrix:
+        node: [ 20 ]
+    name: All Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: scheduler
+          POSTGRES_DB: node_pg_scheduler
+          POSTGRES_PASSWORD: scheduler_pswd
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Cache dependencies
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: '**/node_modules'
+          key: ${{ matrix.node }}-${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install Dependencies
+        run: yarn
+
+      - name: Run Tests
+        run: yarn test
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2

@@ -13,8 +13,7 @@
     "lint-all": "eslint './src/**/*.ts'",
     "format": "prettier --write .",
     "add-prettier-precommit": "grep -q -s 'prettier --write' ./.git/hooks/pre-commit || cat ./scripts/prettier-new-work.sh >> ./.git/hooks/pre-commit",
-    "test": "ts-mocha -p tsconfig.json ./tests/**/*.spec.ts",
-    "test-new": "nyc npx mocha --require ts-node/register -require source-map-support/register --recursive './tests/**/*.spec.ts' --exit"
+    "test": "nyc npx mocha --require ts-node/register -require source-map-support/register --recursive './tests/**/*.spec.ts' --exit"
   },
   "nyc": {
     "extension": [
