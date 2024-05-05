@@ -52,8 +52,11 @@ jobs:
       - name: Install Dependencies
         run: yarn
 
+      - name: Check Types
+        run: yarn check-types
+
       - name: Run Tests
-        run: yarn test
+        run: yarn test --forbid-only
 
       - name: Coveralls
         uses: coverallsapp/github-action@v2

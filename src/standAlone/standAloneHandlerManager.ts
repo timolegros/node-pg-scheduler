@@ -1,10 +1,10 @@
-import {AbstractHandlerManager} from "../../abstractHandlerManager";
-import {TaskHandlerMapType, TaskHandlerType} from "../../types";
-import {mustBeInitialized} from "../../util";
+import {AbstractHandlerManager} from "../abstracts/abstractHandlerManager";
+import {TaskHandlerMapType, TaskHandlerType} from "../types";
+import {mustBeInitialized} from "../util";
 
 export class StandAloneHandlerManager extends AbstractHandlerManager {
-  constructor() {
-    super();
+  constructor({ namespace}: { namespace: string }) {
+    super({ namespace });
     this.taskHandlers = {};
   }
 

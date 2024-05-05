@@ -1,7 +1,7 @@
-import { AbstractTaskManager } from "../../abstractTaskManager";
-import {TaskManagerOptions, TaskType} from "../../types";
-import {logger} from "../../logger";
-import {mustBeInitialized} from "../../util";
+import { AbstractTaskManager } from "../abstracts/abstractTaskManager";
+import {TaskManagerOptions, TaskType} from "../types";
+import {logger} from "../logger";
+import {mustBeInitialized} from "../util";
 
 const log = logger(__filename);
 
@@ -22,10 +22,12 @@ export class StandAloneTaskManager extends AbstractTaskManager {
     const result = await this.pool.query<TaskType>(
       `
       SELECT * FROM tasks
-      WHERE date <= CURRENT_TIMESTAMP AND date > (CURRENT_TIMESTAMP - ($1 * interval '1 millisecond'))
+      WHERE 
+          namespace = $1 AND
+          date <= CURRENT_TIMESTAMP AND date > (CURRENT_TIMESTAMP - ($2 * INTERVAL '1 millisecond'))
       FOR UPDATE SKIP LOCKED;
     `,
-      [this.maxTaskAge]
+      [this._namespace, this.maxTaskAge]
     );
     console.debug("Executable tasks:", JSON.stringify(result.rows, null, 2));
     return result.rows;

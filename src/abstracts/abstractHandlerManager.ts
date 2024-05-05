@@ -1,12 +1,13 @@
 import { Pool } from "pg";
 
-import {TaskHandlerMapType, TaskHandlerType} from "./types";
+import {TaskHandlerMapType, TaskHandlerType} from "../types";
+import {Base} from "../standAlone/base";
 
-export abstract class AbstractHandlerManager {
+export abstract class AbstractHandlerManager extends Base {
   protected taskHandlers: TaskHandlerMapType;
-  protected initialized = false;
 
-  protected constructor() {
+  protected constructor({ namespace }: { namespace: string }) {
+    super({ namespace });
     this.taskHandlers = {};
   }
 

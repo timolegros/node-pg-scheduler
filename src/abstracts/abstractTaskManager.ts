@@ -1,9 +1,10 @@
 import { Pool } from "pg";
-import { createTasksTable } from "./queries";
+import { createTasksTable } from "../queries";
 import { AbstractHandlerManager } from "./abstractHandlerManager";
-import { TaskManagerOptions, TaskQueryOptions, TaskType } from "./types";
-import { logger } from "./logger";
-import {mustBeInitialized} from "./util";
+import { TaskManagerOptions, TaskQueryOptions, TaskType } from "../types";
+import { logger } from "../logger";
+import {mustBeInitialized} from "../util";
+import {Base} from "../standAlone/base";
 
 const log = logger(__filename);
 
@@ -14,14 +15,14 @@ export const Errors = {
   NO_REGISTERED_HANDLER: (name: string) => `No handler registered for ${name}`,
 };
 
-export abstract class AbstractTaskManager {
+export abstract class AbstractTaskManager extends Base {
   protected readonly clearOutdatedTasks: boolean;
   protected readonly maxTaskAge: number;
 
   protected pool: Pool;
-  protected initialized = false;
 
   protected constructor(options: TaskManagerOptions) {
+    super({ namespace: options.namespace });
     this.pool = options.pool;
     this.clearOutdatedTasks = options.clearOutdatedTasks ?? true;
     this.maxTaskAge = options.maxTaskAge ?? 86400000;
@@ -128,8 +129,9 @@ export abstract class AbstractTaskManager {
     if (!options) {
       const { rows } = await this.pool.query(`
           SELECT *
-          FROM tasks;
-      `);
+          FROM tasks
+          WHERE namespace = $1;
+      `, [this._namespace]);
       return rows as TaskType[];
     } else {
       const filters = this.buildTaskFilterQuery(options);
@@ -137,9 +139,9 @@ export abstract class AbstractTaskManager {
         `
             SELECT *
             FROM tasks
-            WHERE ${filters.filterString};
+            WHERE ${filters.filterString} AND namespace = $${filters.values.length + 1}
         `,
-        filters.values,
+        [...filters.values, this._namespace],
       );
 
       return result.rows as TaskType[];
@@ -148,7 +150,7 @@ export abstract class AbstractTaskManager {
 
   /**
    * Gets all tasks that are ready to be executed. This means tasks returned by this function are not locked in the
-   * database by another
+   * database by another scheduler.
    * @param handlerNames
    * @protected
    */
@@ -166,12 +168,14 @@ export abstract class AbstractTaskManager {
       WITH task_ids AS MATERIALIZED (
         SELECT id
         FROM tasks
-        WHERE date <= (CURRENT_TIMESTAMP - ($1 * INTERVAL '1 millisecond'))
-            FOR UPDATE SKIP LOCKED
+        WHERE
+            namespace = $1 AND
+            date <= (CURRENT_TIMESTAMP - ($2 * INTERVAL '1 millisecond'))
+        FOR UPDATE SKIP LOCKED
       ) DELETE FROM tasks
       WHERE id IN (SELECT id FROM task_ids);
     `,
-        [this.maxTaskAge],
+        [this._namespace, this.maxTaskAge],
       );
       log.debug(
         `Cleared ${result.rowCount} tasks that were older than ${this.maxTaskAge} ms`,
@@ -206,9 +210,5 @@ export abstract class AbstractTaskManager {
     }
 
     return { filterString: filters.join(" AND "), values: filterValues };
-  }
-
-  public isInitialized(): boolean {
-    return this.initialized;
   }
 }
