@@ -1,4 +1,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/timolegros/node-pg-scheduler/badge.svg?branch=main)](https://coveralls.io/github/timolegros/node-pg-scheduler?branch=main)
+![GitHub repo size](https://img.shields.io/github/repo-size/timolegros/node-pg-scheduler)
+![GitHub License](https://img.shields.io/github/license/timolegros/node-pg-scheduler)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/timolegros/node-pg-scheduler/CI.yml?branch=main&label=CI)
 
 # Typescript Project Boiler Place
 
