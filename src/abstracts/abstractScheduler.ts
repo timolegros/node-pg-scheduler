@@ -8,8 +8,8 @@ import {
   TaskType,
 } from "../types";
 import { logger } from "../logger";
-import {mustBeInitialized} from "../util";
-import {Base} from "../standAlone/base";
+import { mustBeInitialized } from "../util";
+import { Base } from "../standAlone/base";
 
 const log = logger(__filename);
 
@@ -25,6 +25,8 @@ export abstract class AbstractScheduler extends Base {
   protected intervalId: ReturnType<typeof setTimeout> | undefined;
   protected readonly handleInterval: number;
 
+  protected started: boolean = false;
+
   // note that the number of concurrent connections setup in the pool limits the number of
   // concurrent tasks that can be executed since each task is executed in its own transaction
   protected constructor(
@@ -39,13 +41,28 @@ export abstract class AbstractScheduler extends Base {
     this.executionMode = executionMode;
   }
 
-  public async start(): Promise<void> {
+  public async start(): Promise<boolean> {
+    if (this.started) {
+      return false;
+    }
     mustBeInitialized(this.initialized, this.constructor.name);
     if (this.executionMode === ExecutionMode.single) {
       await this.singleExecution();
     } else {
       await this.startRealtimeExecution();
     }
+    this.started = true;
+    return true;
+  }
+
+  public stop(): boolean {
+    if (this.executionMode === ExecutionMode.single || !this.started) {
+      return false;
+    }
+
+    clearInterval(this.intervalId);
+    this.started = false;
+    return true;
   }
 
   protected async executeTask(
@@ -54,7 +71,7 @@ export abstract class AbstractScheduler extends Base {
   ): Promise<boolean> {
     mustBeInitialized(this.initialized, this.constructor.name);
     const client = await this.pool.connect();
-    log.trace(`executeTask(): Executing task ${task.id}`);
+    log.debug(`executeTask(): Executing task ${task.id}`);
     await client.query("BEGIN;");
     const result = await client.query(
       `
@@ -86,7 +103,7 @@ export abstract class AbstractScheduler extends Base {
     await client.query("DELETE FROM tasks WHERE id = $1", [task.id]);
     await client.query("COMMIT;");
     client.release();
-    log.trace(`executeTask(): Finished executing task ${task.id}`);
+    log.debug(`executeTask(): Finished executing task ${task.id}`);
     return true;
   }
 
@@ -110,14 +127,23 @@ export abstract class AbstractScheduler extends Base {
   protected async startRealtimeExecution(): Promise<void> {
     mustBeInitialized(this.initialized, this.constructor.name);
 
-    log.trace("startRealtimeExecution(): Starting realtime execution");
+    log.debug(
+      { namespace: this.namespace },
+      "startRealtimeExecution(): Starting realtime execution",
+    );
     await this.realtimeExecution();
+    log.debug(
+      { namespace: this.namespace },
+      "First realtime execution executed",
+    );
     this.intervalId = setInterval(async () => {
+      log.debug({ namespace: this.namespace }, "Starting interval execution");
       await this.realtimeExecution();
     }, this.handleInterval);
     log.trace("startRealtimeExecution(): Finished realtime execution");
   }
 
+  // TODO: add optional handler definition here so you don't have to call registerTaskHandler first
   public async scheduleTask(
     date: Date,
     name: string,
@@ -155,5 +181,9 @@ export abstract class AbstractScheduler extends Base {
 
   public isInitialized(): boolean {
     return this.initialized;
+  }
+
+  public isStarted(): boolean {
+    return this.started;
   }
 }

@@ -22,7 +22,6 @@ export async function clearTables() {
   await pool.query("DROP TABLE IF EXISTS tasks");
   await pool.query("DROP TABLE IF EXISTS handlers");
   await pool.query("DROP TABLE IF EXISTS schedulers");
-
 }
 
 export async function insertIntoTasks({

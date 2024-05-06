@@ -49,32 +49,32 @@ export class StandAloneScheduler extends AbstractScheduler {
       notIds: Array.from(this.timeoutTaskIds),
     });
     const handlers = this.handlerManager.getTaskHandlers();
-    log.debug(
-      "Fetched tasks:",
-      JSON.stringify(tasks, null, 2),
-      "\n",
-      "Fetched handlers:",
-      JSON.stringify(Object.keys(handlers), null, 2)
-    );
+    log.debug({
+      fetchedTasks: tasks,
+      fetchedHandlers: handlers,
+    }, "Fetched tasks and handlers");
 
     for (const task of tasks) {
-      log.debug("Processing task:", JSON.stringify(task, null, 2));
+      log.debug({ task }, "Processing task");
       if (!handlers[task.name]) {
-        log.warn(`No handler registered for task ${task.id}`);
+        log.warn({ task }, `No handler registered task handler`);
         continue;
       }
 
       const now = Date.now();
       if (task.date.getTime() > now) {
-        log.debug(`Setting timeout for task ${task.id}`);
         const timeout = task.date.getTime() - now;
+        log.debug(`Setting timeout ${timeout}ms for task ${task.id}`);
+
         this.timeoutTaskIds.add(task.id);
 
         // It is important that the timeout is never cancelled. If the timeout is cancelled, the task id
         // will remain in the set thus preventing the task from being fetched in the future.
-        setTimeout(async () => {
+        setTimeout(() => {
           this.timeoutTaskIds.delete(task.id);
-          await this.executeTask(task, handlers[task.name]);
+          this.executeTask(task, handlers[task.name]).catch((error) => {
+            log.error(`Failed to execute task ${task.id}`, error);
+          });
         }, timeout);
       } else {
         log.debug(`Executing task ${task.id} immediately`);
@@ -85,6 +85,6 @@ export class StandAloneScheduler extends AbstractScheduler {
         });
       }
     }
-    log.trace("realtimeExecution(): Finished realtime execution");
+    log.debug("realtimeExecution(): Finished realtime execution");
   }
 }
