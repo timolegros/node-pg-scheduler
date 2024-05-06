@@ -130,3 +130,4 @@ Use the `DistributedScheduler` class if you intend to have multiple competing ta
 ## Roadmap
 - [ ] Add chaos tests. Test system failure scenarios and recovery ability.
 - [ ] Publish NPM package
+- [ ] Add config option `maxConcurrentTaskHandlers` - scheduler will not execute new tasks until some actively executing task handlers finish
