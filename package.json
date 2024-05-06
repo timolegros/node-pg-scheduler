@@ -13,7 +13,7 @@
     "lint-all": "eslint './src/**/*.ts'",
     "format": "prettier --write .",
     "add-prettier-precommit": "grep -q -s 'prettier --write' ./.git/hooks/pre-commit || cat ./scripts/prettier-new-work.sh >> ./.git/hooks/pre-commit",
-    "test": "NODE_OPTIONS='--import tsx' NODE_ENV=test nyc npx mocha -require source-map-support/register --recursive './tests/**/*.spec.ts' --exit"
+    "test": "NODE_ENV=test nyc npx mocha --require ts-node/register -require source-map-support/register --recursive './tests/**/*.spec.ts' --exit"
   },
   "nyc": {
     "extends": "@istanbuljs/nyc-config-typescript",
@@ -64,7 +64,6 @@
     "mocha": "^10.4.0",
     "pg": "^8.11.3",
     "pino": "^9.0.0",
-    "pino-pretty": "^11.0.0",
-    "tsx": "^4.9.2"
+    "pino-pretty": "^11.0.0"
   }
 }

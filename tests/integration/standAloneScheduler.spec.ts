@@ -12,18 +12,23 @@ chai.use(chaiAsPromised);
 
 const namespace = 'test';
 
-describe.only("StandAloneScheduler", () => {
+const SLEEP_TIME = 100;
+
+describe("StandAloneScheduler", () => {
   let clock: sinon.SinonFakeTimers;
   const pool = new Pool(pgPoolConfig);
 
-  before(async () => {
+  beforeEach(async () => {
     await createTables();
   });
 
   after(async () => {
-    await clearTables();
     await pool.end();
   });
+
+  afterEach(async () => {
+    await clearTables();
+  })
 
   describe.skip("Single Execution", () => {
     it("should initialize the scheduler", async () => {
@@ -131,7 +136,7 @@ describe.only("StandAloneScheduler", () => {
 
       await clock.runAllAsync();
       clock.restore();
-      await sleep(1_000);
+      await sleep(SLEEP_TIME);
       expect(handler.calledOnce, 'Handler should execute after the correct delay').to.be.true;
     }).timeout(5_000);
 
@@ -140,7 +145,7 @@ describe.only("StandAloneScheduler", () => {
       const scheduler = new StandAloneScheduler({
         ...baseOptions,
         handleInterval: 60_000,
-        namespace: 'execute-one-task',
+        namespace: 'execute-one-task-immediately',
       });
       await scheduler.init();
 
@@ -151,15 +156,98 @@ describe.only("StandAloneScheduler", () => {
       await scheduler.scheduleTask(new Date(new Date().getTime() + 500), name, '{}');
       await clock.tickAsync(5_000);
 
-      // restore clock before starting to ensure normal start functionality
-      clock.restore();
-
       await scheduler.start();
       expect(scheduler.isInitialized()).to.be.true;
       expect(scheduler.isStarted()).to.be.true;
 
-      await sleep(1_000);
+      // restore clock before starting to ensure normal start functionality
+      clock.restore();
+
+      const res = scheduler.stop();
+      expect(res).to.be.true;
+
+      await sleep(SLEEP_TIME);
       expect(handler.calledOnce, 'Handler should execute overdue tasks immediately').to.be.true;
     }).timeout(5_000);
+
+    it('should schedule many tasks for parallel execution', async () => {
+      clock = sinon.useFakeTimers(new Date());
+      const scheduler = new StandAloneScheduler({
+        ...baseOptions,
+        handleInterval: 60_000,
+        namespace: 'execute-many-tasks',
+      });
+      await scheduler.init();
+
+      const name = 'test';
+      const handler = sinon.stub().callsFake(() => Promise.resolve());
+      await scheduler.registerTaskHandler(name, handler);
+
+      const taskExecutionDelay = 30_000
+      await scheduler.scheduleTask(new Date(new Date().getTime() + taskExecutionDelay), name, '{}');
+      await scheduler.scheduleTask(new Date(new Date().getTime() + taskExecutionDelay + 1_000), name, '{}');
+      await scheduler.scheduleTask(new Date(new Date().getTime() + taskExecutionDelay + 2_000), name, '{}');
+
+      expect(handler.notCalled, 'Handler should not execute immediately').to.be.true;
+
+      await scheduler.start();
+      expect(scheduler.isStarted()).to.be.true;
+
+      expect(handler.notCalled, 'Handler should not execute immediately').to.be.true;
+
+      const res = scheduler.stop();
+      expect(res).to.be.true;
+      expect(scheduler.isInitialized()).to.be.true;
+      expect(scheduler.isStarted()).to.be.false;
+
+      // advance half the amount of time until the handler should run
+      await clock.tickAsync(taskExecutionDelay / 2);
+      expect(handler.notCalled, 'Handler should not execute after half the delay').to.be.true;
+      await clock.runAllAsync();
+      clock.restore();
+
+      await sleep(SLEEP_TIME);
+      expect(handler.calledThrice, 'Handler should execute after the correct delay').to.be.true;
+    });
+
+    it('should execute many overdue tasks immediately in parallel', async () => {
+      clock = sinon.useFakeTimers(new Date());
+      const scheduler = new StandAloneScheduler({
+        ...baseOptions,
+        handleInterval: 60_000,
+        namespace: 'execute-many-tasks-immediately',
+      });
+      await scheduler.init();
+
+      const name = 'test';
+      const handler = sinon.stub().callsFake(() => Promise.resolve());
+      await scheduler.registerTaskHandler(name, handler);
+
+      const taskExecutionDelay = 30_000
+      await scheduler.scheduleTask(new Date(new Date().getTime() + taskExecutionDelay), name, '{}');
+      await scheduler.scheduleTask(new Date(new Date().getTime() + taskExecutionDelay + 1_000), name, '{}');
+      await scheduler.scheduleTask(new Date(new Date().getTime() + taskExecutionDelay + 2_000), name, '{}');
+
+      expect(handler.notCalled, 'Handler should not execute immediately').to.be.true;
+
+      await clock.tickAsync(33_000);
+
+      await scheduler.start();
+      expect(scheduler.isStarted(), 'Scheduler should be started').to.be.true;
+
+      clock.restore();
+
+      const res = scheduler.stop();
+      expect(res, 'Scheduler polling interval should be stopped').to.be.true;
+
+      await sleep(SLEEP_TIME);
+      expect(handler.calledThrice, 'Handler should execute after the correct delay').to.be.true;
+    }).timeout(10_000);
+
+    it('should set timeouts for newly scheduled tasks after starting', async () => {
+
+    })
   });
+
+  describe('Distributed scheduler', () => {});
 });
